@@ -1,0 +1,7 @@
+interface:
+  display_name: "Paper2PPT"
+  short_description: "由助手引导完整精读、讨论论文逻辑，确认主线后制作原图驱动的中文汇报"
+  default_prompt: "使用 $paper2ppt 启动单篇文献精读与汇报工作流：核对我提供的论文位置，先完整精读并引导讨论，确认逻辑主线后制作简约、只用文献原图的可编辑 PPTX。"
+
+policy:
+  allow_implicit_invocation: true

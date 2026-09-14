@@ -1,0 +1,71 @@
+{
+  "locus_id": "CAT_1",
+  "organism": "Felis catus",
+  "display_name": "猫",
+  "assembly_name": "F.catus_Fca126_mat1.0",
+  "source_url": "https://www.ncbi.nlm.nih.gov/gdv/browser/genome/?id=GCF_018350175.1&chr=NC_058371.1&from=142723183&to=142727265&mk=142725183-142725202%7CF%7Cff0000%2C142725246-142725265%7CR%7C2563eb",
+  "chromosome": "B1",
+  "sequence_role": "chromosome",
+  "retrieved_date": "2026-09-12",
+  "official_svg": "CAT_1_official_tracks.svg",
+  "chromosome_metadata": "chromosome_metadata.json",
+  "export_title_to_remove": "NC_058371.1:142723182..142727265 Felis catus isolate Fca126 chromosome B1, F.catus_Fca126_mat1.0, whole genome shotgun sequence",
+  "coordinate_note": "官方标题起点为 142723182，网页为 142723183；内部约定未核实。仅替换标题，未平移轨道。",
+  "tracks": [
+    {
+      "role": "refseq",
+      "status": "loaded",
+      "title": "Genes, NCBI Felis catus Annotation Release 105, 2021-11-10",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    },
+    {
+      "role": "ensembl",
+      "status": "loaded",
+      "title": "Genes, Ensembl release 2021-08",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    },
+    {
+      "role": "rna_coverage",
+      "status": "loaded",
+      "title": "RNA-seq exon coverage, aggregate (filtered), NCBI Felis catus Annotation Release 105",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    },
+    {
+      "role": "rna_spanning",
+      "status": "loaded",
+      "title": "RNA-seq intron-spanning reads, aggregate (filtered), NCBI Felis catus Annotation Release 105",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    },
+    {
+      "role": "rna_features",
+      "status": "loaded",
+      "title": "RNA-seq intron features, aggregate (filtered), NCBI Felis catus Annotation Release 105",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    },
+    {
+      "role": "variants",
+      "status": "loaded",
+      "title": "EVA RefSNP Release 8",
+      "evidence": "2026-09-12 官方重导出：RefSeq 为绿条+合并转录本/CDS 两行；Ensembl 保留 [+5] 折叠；六类轨道均在。"
+    }
+  ],
+  "notes": [
+    "保留官方转录本折叠和窗口边缘截断；Ensembl [+5] 不是完整展开。",
+    "RNA-seq 为公共汇总，未按组织拆分。",
+    "未进行注释一致性或引物与变异重叠的逐条判定。",
+    "RefSeq 为独立基因绿条 + 其下合并转录本/CDS（XM_/XP_ 同行），与人/鸡/羊默认层级一致，不是 Show all 的绿/紫/红三行。官方 SVG 宽 1094 px。Ensembl 为折叠（[+5]）。"
+  ],
+  "exons": {
+    "transcript": "XM_011281731.4",
+    "gene": "SOWAHB",
+    "strand": "+",
+    "source": "NCBI Datasets product_report 2026-09-12",
+    "intervals": [
+      {
+        "order": 1,
+        "start": 142723522,
+        "end": 142727185
+      }
+    ]
+  }
+}

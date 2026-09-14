@@ -1,0 +1,22 @@
+{
+  "src": "<source JPEG path>",
+  "out": "/tmp/<run>/candidate（标注）.png",
+  "top_padding": 0,
+  "rows": [
+    {
+      "well": "<source y>",
+      "lane_x": ["<source x for EVERY well including empty wells>"],
+      "lane_y": ["<source y for EVERY well>"],
+      "marker_indices": [],
+      "font_scale": 1,
+      "groups": [
+        {
+          "color": "purple",
+          "head": "<user supplied group>",
+          "param": "<user supplied condition or omit>",
+          "lanes": [{"index": 0, "name": "<user supplied identity>"}]
+        }
+      ]
+    }
+  ]
+}
