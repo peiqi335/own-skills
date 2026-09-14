@@ -74,13 +74,11 @@ python3 blast-offline-html/scripts/render_blast_offline.py \
 
 **得到什么**
 
-原图旁一份新 PNG，不覆盖原图或旧标注：
+原图旁一份新 PNG（引线准确落在孔心、支持分组层级、空孔避让与已核实的 Ladder 标尺，不覆盖原图）：
 
-```text
-凝胶1（标注）（Marker-样品1-NTC）.png
-```
+![凝胶标注示例](gel-annotation/assets/example_annotated_gel.png)
 
-尚无确认方案时，agent 先给逐孔表和执行方案，等你确认再画。几何来自本轮对这张图的扫描；身份只能来自你的说明或你指定的记录。仓库里没有成品胶图示例，因为原图属于实验数据。
+尚无确认方案时，agent 先给逐孔表和执行方案，等你确认再画。几何来自本轮对这张图的扫描；身份只能来自你的说明或你指定的记录。
 
 **不要指望它**
 
