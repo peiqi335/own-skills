@@ -1,6 +1,6 @@
 # own-skills
 
-裴崎的 [OpenCode](https://opencode.ai) 自制 skills：给凝胶图标孔、把 BLAST XML 做成离线页、归档 GDV 基因座、核对参考文献、把单篇论文做成原图 PPT。
+裴崎的 [OpenCode](https://opencode.ai) 自制 skills：给凝胶图标孔、把 BLAST XML 做成离线页、归档 GDV 基因座、把单篇论文做成原图 PPT。
 
 本仓库是源码，不是运行时加载点。拷进 OpenCode 的 skills 目录后才会被发现。MIT。
 
@@ -12,7 +12,6 @@
   - [gel-annotation](#gel-annotation)
   - [blast-offline-html](#blast-offline-html)
   - [gdv-offline-evidence](#gdv-offline-evidence)
-  - [nature-ref-verifier](#nature-ref-verifier)
   - [paper2ppt](#paper2ppt)
 - [安装位置](#安装位置)
 - [边界](#边界)
@@ -41,7 +40,6 @@
 给这张第二批凝胶标孔，泳道从左到右是 Marker、样品1、NTC
 把这份 BLAST XML 渲成可断网打开的 HTML
 按 CAT_1 标准做这个 GDV 基因座的离线证据图
-校验这篇开题报告的参考文献
 ```
 
 详细规则在各目录的 `SKILL.md`。未指定输出位置时，agent 按该 skill 的约定落盘，而不是写进本仓库。
@@ -132,38 +130,6 @@ blast-offline/
 
 从截图猜坐标，或自动判定引物特异性、注释一致、实验验证通过。
 
-### nature-ref-verifier
-
-对参考文献逐条做多源核对：作者顺序、标题、年份、卷期、页码、DOI。可处理整篇、单条或 `.bib`。
-
-**你说什么**
-
-```text
-校验这篇开题报告的参考文献
-```
-
-**得到什么**
-
-结构化报告，必要时附 BibTeX 补丁。默认只报告差异，不改 Zotero，除非你明确授权写入。
-
-```markdown
-## 验证结果：56 条文献
-
-- Verified: 42
-- Check suggested: 8
-- Needs fix: 4
-- Unverifiable: 2
-
-### 必须修正
-| # | 问题 | 当前值 | 正确值 | 来源 |
-|---|------|--------|--------|------|
-| [6] | 作者错误 | Smogavec P | Leckebusch J | Wiley |
-```
-
-**不要指望它**
-
-Crossref 404 就断定 DOI 写错（只说明 Crossref 未查得）；也不要把产品手册、专利当期刊条目硬核。
-
 ### paper2ppt
 
 单篇精读、讨论逻辑主线，确认后再做原图驱动的可编辑 PPTX。图只来自该论文及补充材料，允许裁切和等比缩放，禁止生成或重绘机制图。
@@ -211,7 +177,6 @@ Crossref 404 就断定 DOI 写错（只说明 Crossref 未查得）；也不要�
 
 - `gel-annotation`、`gdv-offline-evidence`、`blast-offline-html` 面向 PCR / 基因组 vault 的相对目录（如 `1.原始资料/`、`4.知识库/`），不是即插即用的通用工具。
 - `paper2ppt` 需要你指定或确认汇报根目录。
-- `nature-ref-verifier` 要联网；Zotero、CNKI 有则用、无则降级。
 - 胶图、BLAST 命中、GDV 轨道都不是湿实验结论。
 
 ## License

@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from review_gel import check_source, geometry_hash, row_box, spec_rows, write_panels
 
 TMP_ROOT = Path("/tmp/codex/gel-annotation")
 DEJAVU = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
@@ -154,30 +155,21 @@ def cmd_wells(src: Path, dest: Path, row: str, x0: int | None, x1: int | None, t
     left = 0 if x0 is None else x0
     right = w if x1 is None else x1
     box = clip_box((w, h), [left, y0, right, y1])
-    crop = im.crop(box).convert("L")
-    crop = ImageEnhance.Contrast(crop).enhance(2.5).convert("RGB")
-    scale = 2 if crop.size[1] < 220 else 1
-    if scale > 1:
-        crop = crop.resize((crop.size[0] * scale, crop.size[1] * scale))
+    enhanced = im.copy()
+    enhanced.paste(ImageEnhance.Contrast(im.crop(box).convert("L")).enhance(2.5).convert("RGB"), box[:2])
+    crop = enhanced.crop(box)
+    scale = 1
     draw_x_ticks(crop, box[0], tick, scale)
     out = dest / "wells.jpg"
     save_jpeg(crop, out)
-    panels = []
-    if crop.size[0] > 1400:
-        n = 3
-        pw = crop.size[0] // n
-        for i in range(n):
-            a = i * pw
-            b = crop.size[0] if i == n - 1 else (i + 1) * pw
-            panel = crop.crop((a, 0, b, crop.size[1]))
-            path = dest / f"wells_p{i + 1}.jpg"
-            save_jpeg(panel, path)
-            panels.append(str(path))
+    review_panels = write_panels(im, enhanced, dest, "wells", box, second_label="CONTRAST")
+    panels = [p["path"] for p in review_panels]
     emit(
         {
             "stage": "wells",
             "out": str(out),
             "panels": panels,
+            "review_panels": review_panels,
             "src": str(src),
             "src_sha256": sha256(src),
             "size": [w, h],
@@ -185,7 +177,7 @@ def cmd_wells(src: Path, dest: Path, row: str, x0: int | None, x1: int | None, t
             "x": [box[0], box[2]],
             "scale": scale,
             "tick": tick,
-            "note": "read absolute x from the yellow ticks; view each panel",
+            "note": "read every native-pixel RAW/enhanced panel; x/y rulers are source coordinates outside the image",
         }
     )
 
@@ -223,11 +215,12 @@ def cmd_zoom(src: Path, dest: Path, at: str, size: int) -> None:
     )
 
 
-def cmd_lanes(src: Path, dest: Path, xs_text: str, well: int | None, span: str | None, ys_text: str | None = None) -> None:
+def cmd_lanes(src: Path, dest: Path, xs_text: str, well: int | None, span: str | None, ys_text: str | None = None, review_box=None, geometry_sha256=None) -> None:
     im = Image.open(src).convert("RGB")
+    raw = im.copy()
     w, h = im.size
-    xs = parse_ints(xs_text, None, "xs")
-    ys = parse_ints(ys_text, len(xs), "ys") if ys_text else None
+    xs = xs_text if isinstance(xs_text, list) else parse_ints(xs_text, None, "xs")
+    ys = ys_text if isinstance(ys_text, list) else (parse_ints(ys_text, len(xs), "ys") if ys_text else None)
     if any(a >= b for a, b in zip(xs, xs[1:])):
         raise SystemExit("xs must be strictly increasing")
     if ys and any(not 0 <= v < h for v in ys):
@@ -243,7 +236,7 @@ def cmd_lanes(src: Path, dest: Path, xs_text: str, well: int | None, span: str |
     _, y0, _, y1 = clip_box((w, h), [0, y0, w, y1])
     draw = ImageDraw.Draw(im)
     fnt = font(28 if w > 2000 else 22)
-    if well is not None:
+    if well is not None and not ys:
         draw.line((min(xs) - 40, well, max(xs) + 40, well), fill=CYAN, width=3)
         draw.text((8, well - 28), f"well={well}", fill=CYAN, font=fnt)
     for i, x in enumerate(xs, 1):
@@ -255,6 +248,9 @@ def cmd_lanes(src: Path, dest: Path, xs_text: str, well: int | None, span: str |
             draw.line((x - 15, cy, x + 15, cy), fill=CYAN, width=3)
         draw.text((x - 12, max(0, y0 - 36)), str(i), fill=RED, font=fnt)
     out = save_jpeg(im, dest / "lanes.jpg")
+    region = review_box if review_box is not None else [min(xs)-80, min(ys or [well if well is not None else y0])-65,
+                                                       max(xs)+81, max(ys or [well if well is not None else y1])+66]
+    review_panels = write_panels(raw, im, dest, "lanes", region, lane_x=xs)
     emit(
         {
             "stage": "lanes",
@@ -267,6 +263,9 @@ def cmd_lanes(src: Path, dest: Path, xs_text: str, well: int | None, span: str |
             "well": well,
             "span": [y0, y1],
             "n": len(xs),
+            "review_panels": review_panels,
+            "geometry_sha256": geometry_sha256,
+            "visual_status": "not_reviewed",
         }
     )
 
@@ -395,8 +394,9 @@ def build_parser() -> argparse.ArgumentParser:
     wells.add_argument("--tick", type=int, default=40, help="absolute x tick spacing on the source")
 
     lanes = sub.add_parser("lanes", help="numbered verticals at candidate well centers")
-    lanes.add_argument("src", type=Path)
-    lanes.add_argument("--xs", required=True, help="comma-separated well-center x")
+    lanes.add_argument("src", type=Path, nargs="?")
+    lanes.add_argument("--spec", type=Path, help="read all rows from the rendering spec; requires source_sha256")
+    lanes.add_argument("--xs", help="comma-separated well-center x (legacy manual mode)")
     lanes.add_argument("--ys", help="one source y per well")
     lanes.add_argument("--well", type=int, help="well-row y")
     lanes.add_argument("--span", help="y0,y1 for the verticals")
@@ -425,6 +425,31 @@ def main(argv: list[str] | None = None) -> None:
     for name in ("x_step", "y_step", "tick", "size"):
         if hasattr(args, name) and getattr(args, name) <= 0:
             raise SystemExit(f"{name} must be positive")
+    if args.cmd == "lanes" and args.spec:
+        if any(v is not None for v in (args.src, args.xs, args.ys, args.well, args.span)):
+            raise SystemExit("--spec cannot be mixed with manual source/geometry arguments")
+        from annotate_gel import geometry, validate_row
+        spec = json.loads(args.spec.read_text(encoding="utf-8"))
+        src = resolve_src(Path(spec["src"]), args.repo)
+        check_source(spec, sha256(src), required=True)
+        rows = spec_rows(spec)
+        with Image.open(src) as source:
+            size = source.size
+        rows = [dict(r, well=geometry(r, size[1])["well"]) for r in rows]
+        for row in rows:
+            validate_row(row, size)
+            row_box(row, size)
+        dest = out_dir_for(src, args.out_dir)
+        for i, row in enumerate(rows, 1):
+            row_dest = dest / f"row{i}"
+            row_dest.mkdir(parents=True, exist_ok=True)
+            region = row_box(row, size)
+            # Use the exact spec values; do not round float coordinates differently from rendering.
+            cmd_lanes(src, row_dest, row["lane_x"], row["well"], f"{region[1]},{region[3]}",
+                      row.get("lane_y"), region, geometry_hash(rows))
+        return
+    if args.cmd == "lanes" and (args.src is None or not args.xs):
+        raise SystemExit("lanes requires --spec SPEC or SRC --xs ...")
     src = resolve_src(args.src, args.repo)
     dest = out_dir_for(src, args.out_dir)
     if args.cmd == "grid":

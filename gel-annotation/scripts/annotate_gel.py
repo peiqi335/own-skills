@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+from review_gel import annotation_review, check_source, review_directory, row_box, spec_rows
 
 COLORS = {
     "purple": (211, 61, 243),
@@ -61,24 +62,51 @@ def checked_text(draw, pos, text, fnt, fill) -> None:
     width, height = draw._image.size
     if box[0] < 0 or box[1] < 0 or box[2] > width or box[3] > height:
         raise SystemExit(f"label outside canvas: {text!r}; adjust y/font_scale/top_padding")
+    name = f"{getattr(draw, '_context', '')}/{text}"
+    boxes = getattr(draw, '_text_boxes', [])
+    for other, previous in boxes:
+        if max(box[0], previous[0]) < min(box[2], previous[2]) and max(box[1], previous[1]) < min(box[3], previous[3]):
+            raise SystemExit(f"label collision: {name!r} {box} overlaps {other!r} {previous}; adjust layout")
+    boxes.append((name, box))
+    draw._text_boxes = boxes
     draw.text(pos, text, font=fnt, fill=fill)
 
 
+def checked_points(draw, points, width, name):
+    w, h = draw._image.size
+    margin = (width - 1) / 2
+    if any(not (margin <= x <= w-1-margin and margin <= y <= h-1-margin) for x, y in points):
+        raise SystemExit(f"{getattr(draw, '_context', '')}/{name} outside canvas: {points}")
+    if name in ("bracket", "bar"):
+        boxes = getattr(draw, '_shape_boxes', [])
+        boxes.append((getattr(draw, '_context', '') + '/' + name,
+                      (min(p[0] for p in points)-margin, min(p[1] for p in points)-margin,
+                       max(p[0] for p in points)+margin, max(p[1] for p in points)+margin)))
+        draw._shape_boxes = boxes
+
+
+def checked_line(draw, coords, fill, width=3, name="line"):
+    checked_points(draw, [(coords[0], coords[1]), (coords[2], coords[3])], width, name)
+    draw.line(coords, fill=fill, width=width)
+
+
 def arrow(draw: ImageDraw.ImageDraw, start, end, color, width=4, head=16) -> None:
-    draw.line((*start, *end), fill=color, width=width)
     dx, dy = end[0] - start[0], end[1] - start[1]
     length = max((dx * dx + dy * dy) ** 0.5, 1)
     ux, uy = dx / length, dy / length
     px, py = -uy, ux
     left = (end[0] - ux * head + px * head * 0.55, end[1] - uy * head + py * head * 0.55)
     right = (end[0] - ux * head - px * head * 0.55, end[1] - uy * head - py * head * 0.55)
+    checked_points(draw, [start, end], width, "arrow shaft")
+    checked_points(draw, [end, left, right], 1, "arrow head")
+    draw.line((*start, *end), fill=color, width=width)
     draw.polygon([end, left, right], fill=color)
 
 
 def group_bracket(draw: ImageDraw.ImageDraw, x0, x1, y, y1, color, width=4) -> None:
-    draw.line((x0, y, x1, y), fill=color, width=width)
-    draw.line((x0, y, x0, y1), fill=color, width=width)
-    draw.line((x1, y, x1, y1), fill=color, width=width)
+    checked_line(draw, (x0, y, x1, y), color, width, "bracket")
+    checked_line(draw, (x0, y, x0, y1), color, width, "bracket")
+    checked_line(draw, (x1, y, x1, y1), color, width, "bracket")
 
 
 def load_spec(path: Path) -> dict:
@@ -108,7 +136,7 @@ def geometry(spec: dict, image_height: int) -> dict:
     return y
 
 
-def annotate(spec: dict, repo: Path, lane_x: list[int] | None) -> Path:
+def annotate(spec: dict, repo: Path, lane_x: list[int] | None, review_dir: Path | None = None) -> Path:
     src = resolve(Path(spec["src"]), repo)
     out = resolve(Path(spec["out"]), repo)
     if not src.is_file():
@@ -123,10 +151,11 @@ def annotate(spec: dict, repo: Path, lane_x: list[int] | None) -> Path:
     if out.suffix.lower() != ".png":
         raise SystemExit("annotation output must be PNG")
     before = sha256(src)
+    if review_dir is not None:
+        review_dir = review_directory(review_dir)
+    check_source(spec, before, required=review_dir is not None)
     original = Image.open(src).convert("RGB")
-    rows = spec.get("rows", [spec])
-    if not rows:
-        raise SystemExit("rows must not be empty")
+    rows = spec_rows(spec)
     if lane_x is not None:
         rows = [dict(rows[0], lane_x=lane_x)]
     padding = int(spec.get("top_padding", 0))
@@ -134,14 +163,23 @@ def annotate(spec: dict, repo: Path, lane_x: list[int] | None) -> Path:
         raise SystemExit("top_padding must be nonnegative")
     for row in rows:
         validate_row(row, original.size)
+        if review_dir is not None:
+            row_box(dict(row, well=geometry(row, original.height)["well"]), original.size)
     im = Image.new("RGB", (original.width, original.height + padding), "black")
     im.paste(original, (0, padding))
-    for row in rows:
-        draw_row(im, row, original.height, padding)
+    draw = ImageDraw.Draw(im)
+    for i, row in enumerate(rows, 1):
+        draw._context = f"row {i}"
+        draw_row(im, row, original.height, padding, draw)
     out.parent.mkdir(parents=True, exist_ok=True)
     im.save(out)
     if before != sha256(src):
         raise SystemExit("source image changed while annotating")
+    if review_dir is not None:
+        normalized = [dict(r, well=geometry(r, original.height)["well"]) for r in rows]
+        with Image.open(out) as saved:
+            annotation_review(original, saved.convert("RGB"), normalized, padding, review_dir, out, before,
+                              getattr(draw, '_text_boxes', []) + getattr(draw, '_shape_boxes', []))
     return out
 
 
@@ -175,22 +213,28 @@ def validate_row(spec: dict, size: tuple[int, int]) -> None:
     if used.intersection(markers):
         raise SystemExit("Marker also assigned to a sample group")
     if spec.get("bp_guide"):
+        if not spec.get("bp_source"):
+            raise SystemExit("bp_guide requires bp_source (ladder specification evidence)")
         if not markers:
             raise SystemExit("bp_guide requires a Marker")
         if spec.get("bp_marker_index", markers[0]) not in markers:
             raise SystemExit("bp_marker_index must refer to a Marker")
         if any(not 0 <= band["y"] < h for band in spec["bp_guide"]):
             raise SystemExit("bp band outside source image")
+    for key in ("bp_target_x", "bp_arrow_x", "bp_label_x"):
+        if key in spec and (not isinstance(spec[key], (int, float)) or not 0 <= spec[key] < w):
+            raise SystemExit(f"{key} outside source image")
     scale = spec.get("font_scale", 1)
     if not isinstance(scale, (int, float)) or not 0 < scale <= 2:
         raise SystemExit("font_scale must be greater than 0 and at most 2")
 
 
-def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int) -> None:
+def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int, draw=None) -> None:
     xs = spec["lane_x"]
     y = {key: value + padding for key, value in geometry(spec, image_height).items()}
     ys = [v + padding for v in spec.get("lane_y", [y["well"] - padding] * len(xs))]
-    draw = ImageDraw.Draw(im)
+    draw = draw if draw is not None else ImageDraw.Draw(im)
+    row_context = getattr(draw, '_context', 'row')
     scale = spec.get("font_scale", 1)
     head_f = font(max(1, round(46 * scale)), True)
     param_f = font(max(1, round(38 * scale)), True)
@@ -199,7 +243,8 @@ def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int) -> No
     bp_f = font(max(1, round(32 * scale)))
     primer_f = font(max(1, round(38 * scale)))
 
-    for group in spec.get("groups", []):
+    for group_index, group in enumerate(spec.get("groups", []), 1):
+        draw._context = f"{row_context}/group {group_index}"
         color = COLORS[group.get("color", "purple")]
         lanes = group["lanes"]
         indices = [item["index"] for item in lanes]
@@ -215,7 +260,7 @@ def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int) -> No
             centered(draw, mid, y["param"] + shift, group["param"], param_f, color)
         if group.get("bar") and len(indices) >= 2:
             bar_y = y["param"] + shift + 28
-            draw.line((x_first - 20, bar_y, x_last + 20, bar_y), fill=color, width=3)
+            checked_line(draw, (x_first - 20, bar_y, x_last + 20, bar_y), color, name="bar")
         names = [item.get("name") or "" for item in lanes]
         labeled = [name for name in names if name]
         same_name = len(set(labeled)) == 1 and len(labeled) == len(names)
@@ -227,9 +272,10 @@ def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int) -> No
             if name and not same_name:
                 centered(draw, x, y["lane"], name, lane_f, color)
             if draw_lines:
-                draw.line((x, y["bracket"], x, ys[item["index"]]), fill=color, width=3)
+                checked_line(draw, (x, y["bracket"], x, ys[item["index"]]), color, name=f"well {item['index']+1} leader")
 
     for idx in spec.get("marker_indices", []):
+        draw._context = f"{row_context}/Marker well {idx+1}"
         x = xs[idx]
         centered(draw, x, y["marker"], "Marker", marker_f, COLORS["white"])
         arrow(draw, (x, y["marker_arrow"]), (x, ys[idx]), COLORS["white"], 4, 18)
@@ -240,12 +286,15 @@ def draw_row(im: Image.Image, spec: dict, image_height: int, padding: int) -> No
     gel_left = min(xs)
     bp_arrow_x = spec.get("bp_arrow_x", max(40, gel_left - 220))
     bp_label_x = spec.get("bp_label_x", max(8, bp_arrow_x - 150))
+    bp_target_x = spec.get("bp_target_x", marker_x - 20)
     for item in bp_guide:
+        draw._context = f"{row_context}/bp"
         band_y = item["y"] + padding
         checked_text(draw, (bp_label_x, band_y - 20), item["label"], bp_f, COLORS["red"])
-        arrow(draw, (bp_arrow_x, band_y), (marker_x - 20, band_y), COLORS["red"], 3, 16)
+        arrow(draw, (bp_arrow_x, band_y), (bp_target_x, band_y), COLORS["red"], 3, 16)
 
     if spec.get("primer_line"):
+        draw._context = f"{row_context}/primer"
         primer_x = (min(xs) + max(xs)) / 2
         centered(draw, primer_x, y["primer"], spec["primer_line"], primer_f, COLORS["red"])
 
@@ -256,12 +305,16 @@ def main() -> None:
     parser.add_argument("spec", type=Path)
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--review-dir", type=Path, help="write native-pixel review panels and review.json; requires source_sha256")
     args = parser.parse_args()
     spec = load_spec(args.spec)
     if args.overwrite:
         spec["overwrite"] = True
-    out = annotate(spec, args.repo, None)
-    print(out)
+    out = annotate(spec, args.repo, None, args.review_dir)
+    if args.review_dir:
+        print((args.review_dir / "review.json").read_text(encoding="utf-8"))
+    else:
+        print(out)
 
 
 if __name__ == "__main__":

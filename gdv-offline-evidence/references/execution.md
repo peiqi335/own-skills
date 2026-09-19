@@ -4,7 +4,7 @@
 
 ## 1. 环境和来源准备
 
-- 只查任务相关路径。当前仓库示例位于 `4.知识库/01.检测体系准备/PCR与凝胶初筛/结果汇总/primer-blast-15/06.GDV/CAT_1增强示例/`；技能内 `assets/cat1-standard/` 是冻结副本。
+- 只查任务相关路径。当前仓库示例位于 `4.知识库/01.检测体系准备/PCR与凝胶初筛/结果汇总/primer-blast-15/03.GDV/CAT_1增强示例/`；技能内 `assets/cat1-standard/` 是冻结副本。
 - 先查看根 `AGENTS.md`、`git status --short`、`git branch --show-current`。不改现有无关文件。
 - 新目标：拿到其 GDV 链接或用户确认的坐标表。若 URL 中有 Markdown 转义 `\&`，只去除 Markdown 转义，不能改变数值；用 URL 解析器解析 query，再做 URL 编码，不手工拼接多层 `%25`。
 - 本脚本接受包含 `id / chr / from / to / mk` 的 GDV URL。Sequence Viewer 链接要先核实对应 assembly 后规范化为 GDV 链接。无明确标记时不要自动沿用猫的 F/R。

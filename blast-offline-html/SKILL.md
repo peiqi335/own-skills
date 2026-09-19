@@ -19,7 +19,7 @@ description: "Render NCBI BLAST XML into offline HTML directories with Graphic S
 
 每份 XML 生成 `{stem}.html`，共用 `viewer.css`，携带时复制整个目录。文件名形如 `{ABC}_1_...` 时写入 `{ABC}_1/` 子目录，CSS 与目录页用 `../`。单份结果隐藏目录入口。多于一份再写 `index.html`。不覆盖 XML、NCBI 原 HTML、`1.原始资料/`、`3.记录/`。
 
-若当前项目存在相对路径 `4.知识库/01.检测体系准备/PCR与凝胶初筛/结果汇总/primer-blast-15/02.core_nt回贴/xml/`，默认用它作输入、输出到同级 `03.离线查看/`。否则必须由用户给出 XML 路径，且 CLI 必须指定 `-o`。
+本课题已有 XML 时，默认输入 `4.知识库/01.检测体系准备/PCR与凝胶初筛/结果汇总/primer-blast-15/02.blastn/xml/`，输出 `.../primer-blast-15/02.blastn/`。
 
 ## 执行
 

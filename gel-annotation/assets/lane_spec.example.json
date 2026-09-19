@@ -1,12 +1,14 @@
 {
   "src": "<source JPEG path>",
   "out": "/tmp/<run>/candidate（标注）.png",
+  "source_sha256": "<compute real SHA-256 of src; do not run this example as-is>",
   "top_padding": 0,
   "rows": [
     {
       "well": "<source y>",
       "lane_x": ["<source x for EVERY well including empty wells>"],
       "lane_y": ["<source y for EVERY well>"],
+      "review_box": ["<x0>", "<y0>", "<x1>", "<y1>"],
       "marker_indices": [],
       "font_scale": 1,
       "groups": [
