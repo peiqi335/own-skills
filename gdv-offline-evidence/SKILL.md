@@ -1,13 +1,11 @@
 ---
 name: gdv-offline-evidence
 description: "将 NCBI GDV/Sequence Viewer 的指定基因座保存为多轨道离线 PDF、SVG 和 PNG，按已确认 CAT_1 标准加入染色体定位、RefSeq/Ensembl、RNA-seq、变异及引物示意。用于 GDV 离线增强、基因组浏览器矢量归档和引物基因座证据展示；不用于运行 BLAST、从图片猜测坐标或给出实验验证结论。"
-metadata:
-  target-runtime: opencode
 ---
 
 # GDV 多轨道离线证据图
 
-本技能面向 OpenCode 中执行任务的 Gemini 或其他模型。**不依赖之前的对话、Codex 私有工具或 `/tmp` 中曾存在的文件。** `assets/cat1-standard/` 是用户确认的视觉标准（含 02 区独立基因绿条）；使用真实的当前目标数据复现这个信息层级，不把 CAT_1 的数据复制到其他基因座。仓库里的 `CAT_1增强示例` 是工作副本，更新冻结目录须用户明确授权。
+本技能适用于当前宿主可用的浏览器、文件和图像工具。**不依赖之前的对话或 `/tmp` 中曾存在的文件。** `assets/cat1-standard/` 是用户确认的视觉标准（含 02 区独立基因绿条）；使用真实的当前目标数据复现可用的信息层级，不把 CAT_1 的数据复制到其他基因座。仓库里的 `CAT_1增强示例` 是工作副本，更新冻结目录须用户明确授权。
 
 ## 先明确交付目标
 
@@ -21,9 +19,9 @@ metadata:
 
 ## 执行前必读与必看
 
-1. 读 [操作流程](references/execution.md)，其中包括从网页到本地文件的完整步骤、工具适配和错误恢复。
-2. 读 [成品标准与验收](references/quality-standard.md)，并用当前宿主提供的真实图像查看工具打开 [CAT_1 标准 PNG](assets/cat1-standard/CAT_1_enhanced.png)。必要时查看同目录 PDF/SVG。**读取文件名或提取文字不等于看过图片。**
-3. 填写输入前读 [输入字段说明](references/specification.md)，不要凭字段名称猜含义。
+1. 需要从网页取得轨道时读 [操作流程](references/execution.md)；已有官方 SVG 时直接核对原件与来源。
+2. 填写或修改 spec 时读 [输入字段说明](references/specification.md)。
+3. 制作或验收新图时读 [成品标准与验收](references/quality-standard.md)，并用真实图像查看工具打开 [CAT_1 标准 PNG](assets/cat1-standard/CAT_1_enhanced.png)。**读取文件名或提取文字不等于看过图片。**
 4. 标准图只能作为布局参照；本次目标的 assembly、accession、窗口、标记、轨道及日期必须重新核实。
 
 ## 不能省略的证据规则
@@ -31,14 +29,17 @@ metadata:
 - 明确 `物种 → assembly accession/version → sequence accession/version → 染色体名/支架名 → window → primer markers`。未知字段不猜、不用其他物种代填。
 - B1 是猫的染色体名，不是细胞遗传学带区；无权威带型数据时只画长度比例条，不能虚构着丝粒或条带。支架只标 scaffold，不编染色体号。
 - 每个目标分别检查六类轨道：RefSeq、Ensembl、RNA-seq coverage、RNA-seq spanning reads、RNA-seq intron features、variants。并非每个物种都具备全部轨道。
-- RefSeq 默认应对齐人/鸡/羊：尺标下独立基因绿条，其下**一行**合并转录本/CDS（深绿外显子、浅绿 UTR；XM_/XP_ 可同行）。若为 `Merge all transcripts and CDSs, no gene bar`，改成带 gene bar 的合并模式后重导，不要用 **Show all** 拆成绿/紫/红三行。绿条属于 02 区官方轨道，不是 01 定位条，也不是 03 区 `exon N`。禁止在现有 SVG 上涂绿带。Ensembl 默认仍保留官方折叠（如 `[+N]`）。
-- 导出须勾 `Include Title`。渲染器要求官方 SVG 文字中出现序列 accession；缺标题就重导，不要手补标题或平移轨道。官方 SVG 导出基准宽为 **1094 px**（与 CAT_1 一致，使排版时获 ~1.44x 舒适放大率；避免 1574 px 导致字号偏小）。轨道层级必须严格遵循 RefSeq → Ensembl → RNA-seq → Variants，严禁顺序倒挂。
+- RefSeq 优先使用 CAT_1 的独立基因绿条和一行合并转录本/CDS；能在页面切换时可选此模式。当前组装无法显示该结构时保留真实官方图并注明差异，不能在 SVG 上补画绿带。Ensembl 折叠状态按官方图保留。
+- 导出时优先勾 `Include Title`，但无标题原件可按 [无标题来源核实](references/specification.md#无标题官方-svg)记录同次页面/导出证据后使用；标题与目标序列冲突或身份无法核实时须重导。1094 px 是 CAT_1 的视觉参考宽度，不是输入门槛；1574 px 等宽度由本地等比排版并实际验收。轨道推荐按 RefSeq → Ensembl → RNA-seq → Variants 阅读；官方顺序不同则记录并目视核对，不改原件几何。
 - 区分 `loaded`（已显示数据）、`available_empty`（轨道可用但当前窗口未显示特征）、`unavailable`（已查证不可用）。请求失败、未查看和尚未加载都不是不可用，更不是“无变异”。`unavailable` 必须写明查过的 NCBI 目录或配置面板，禁止套用“未收录密集公共变异数据”。
 - URL 的组装号必须与序列 accession 对应；`NC_139399.1` 这类新序列不能沿用旧 `GCF_`。
 - `notes` 和来源说明不得写入湿实验机制、阳性确证或“特异性高”。
 - RNA-seq 是公共研究证据，保留汇总/过滤/比例等标题信息；不能直接当作本实验表达结果。变异轨道不是本样本的基因型。
 - Ensembl 和 RefSeq 并列显示不自动构成“交叉验证通过”。若用户额外要求判定一致性，需逐转录本、外显子及链向比对，单独给出依据。
 - 引物颜色、分段、身份、顺序和坐标以当前确认来源为准。跨内含子的分段不拉成连续引物；标签名不能用于推断正负链。外侧跨度不称为实测扩增子。
+- 有 `exons` 必须显式填写 `product_report` 相对路径；按目标 transcript accession.version + genomic accession 唯一记录核对 strand 及完整 order/start/end，不靠全文字符串搜索。缺报告、歧义、版本错配和 1 bp 差异都失败。
+- 同次 official SVG 的标题与 URL 范围由脚本提取并写入说明和 checks；边界差异用 `boundary_review` 绑定实际两组端点及核查记录，接受已核查差异而不平移，不宣称内部坐标约定已知。
+- `loaded/available_empty` 另填一致的 `content_state` 和声明实际内容的 `content_evidence`，不能只靠标题通过科学验收；人工内容与视觉核查保留 pending。引物可选 `primer_evidence` 绑定完整 F/R、来源相对 path/hash、转录本版本及 mk 端点；机械校验通过不等于准确结合，`marker_validation` 仍 pending。
 - 若 `mk` 含 `exN` 或要在 03 区标外显子：先选定官方 SVG 中已出现的一条 `XM_`/`NM_`，用 Datasets `product_report` 的 `order` 编号。`N` 必须等于该段完整落入的外显子 `order`，02 区尺标、URL `mk` 与 03 区同名。窗口里其他转录本、Ensembl 小框或合并基因条多出来的块不能另编一套号。坐标对、标签错仍算失败。默认不改官方 SVG 几何；仅当用户明确授权纠正错误 `mk` 名时，才等长替换尺标文字或重导。`marker_display` 只给非编号别名，不得把 `ex13` 显示成 `ex11`。冲突则停该座。
 - 组装不同的数据不能直接叠加；默认只使用 GDV 中与当前组装相容的轨道。本技能不自动做 liftOver、重比对或原始 RNA-seq 分析。
 
@@ -52,7 +53,7 @@ metadata:
 
 ### 2. 获取真实官方轨道
 
-在 GDV 完成六类轨道检查；等待图形加载，实际看图确认有基因结构、coverage 或变异特征，而非只有轨道名称。按流程文档通过 `Download → Printer-Friendly PDF/SVG` 导出 SVG，保留原件。
+在 GDV 完成六类轨道检查；等待图形加载，实际看图确认有基因结构、coverage 或变异特征，而非只有轨道名称。按流程文档通过 `Download → Printer-Friendly PDF/SVG` 导出 SVG，保留原件。来源与当前组装不相容且尚未核实的轨道从导出中排除，并记录缺口。
 
 不要用网页截图包装成 SVG，不要按想象手绘 Ensembl、RNA-seq 曲线、SNP 或基因绿条。确有不可用轨道时明示缺口；服务暂时错误则按恢复步骤处理，不能伪造完整成果。
 
@@ -67,8 +68,8 @@ metadata:
 默认调用 `scripts/render_gdv.py`，而非临时重写布局。它保留官方轨道数据和相对几何，裁掉底部空网格，增加白底页眉、序列定位、标记示意、来源说明；远距离短引物另画局部窗。`spec.exons` 存在时，03 区同轴画出该 RefSeq 转录本的外显子。
 
 ```bash
-python3 .opencode/skills/gdv-offline-evidence/scripts/render_gdv.py /绝对路径/spec.json --validate-only
-python3 .opencode/skills/gdv-offline-evidence/scripts/render_gdv.py /绝对路径/spec.json -o /绝对路径/新的输出目录
+python3 .agents/skills/gdv-offline-evidence/scripts/render_gdv.py /绝对路径/spec.json --validate-only
+python3 .agents/skills/gdv-offline-evidence/scripts/render_gdv.py /绝对路径/spec.json -o /绝对路径/新的输出目录
 ```
 
 实际执行时用当前可用的 Python 或临时虚拟环境 Python 替换 `python3`，依赖见操作流程。不要把示例中的占位路径原样执行。输出目录必须不存在；不以删除用户目录的方式解决冲突。
@@ -79,14 +80,14 @@ python3 .opencode/skills/gdv-offline-evidence/scripts/render_gdv.py /绝对路�
 
 脚本只做静态校验，`checks.json` 默认 `visual_review: pending`。执行者只有实际看过新产物后才能记录 `passed`、日期、查看的文件及发现/修正情况；最终源说明也同步写明实际检查。修改说明后更新其哈希，不伪造检查。
 
-最终直接给 PDF/SVG 链接和 PNG 预览，简述本次新增信息与真实缺口。视觉工具不可用时照实交付“待视觉验收”，不能称为已达到标准。
+最终直接给 PDF/SVG 链接和 PNG 预览，简述本次新增信息与真实缺口。视觉工具不可用时照实交付“待视觉验收”，不能称为已达到标准。浏览器安全层拒绝下载时停止该来源的下载尝试，完成其他位点与来源记录后一次性列出所需原件；不绕过宿主拦截。
 
 ## 本技能自检与离线回放
 
 ```bash
-python3 -B -m unittest discover -s .opencode/skills/gdv-offline-evidence/tests
-python3 .opencode/skills/gdv-offline-evidence/scripts/render_gdv.py .opencode/skills/gdv-offline-evidence/assets/cat1-standard/spec.json --validate-only
-python3 .opencode/skills/gdv-offline-evidence/scripts/render_gdv.py .opencode/skills/gdv-offline-evidence/assets/cat1-standard/spec.json -o /tmp/gdv-cat1-replay-新编号
+python3 -B -m unittest discover -s .agents/skills/gdv-offline-evidence/tests
+python3 .agents/skills/gdv-offline-evidence/scripts/render_gdv.py .agents/skills/gdv-offline-evidence/assets/cat1-standard/spec.json --validate-only
+python3 .agents/skills/gdv-offline-evidence/scripts/render_gdv.py .agents/skills/gdv-offline-evidence/assets/cat1-standard/spec.json -o /tmp/gdv-cat1-replay-新编号
 ```
 
 离线回放验证渲染与数据保护，不声称验证了 Gemini 的浏览器操作、最新 NCBI 服务或其他物种数据。完整维护验收见 [测试场景](references/quality-standard.md#技能维护测试场景)。

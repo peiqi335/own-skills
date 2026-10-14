@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "name": "second_batch_v1",
+  "colors": {
+    "purple": [211, 61, 243], "yellow": [245, 217, 0],
+    "red": [255, 66, 66], "white": [255, 255, 255],
+    "cyan": [0, 200, 230], "green": [30, 180, 95],
+    "orange": [245, 150, 35], "pink": [230, 75, 180]
+  },
+  "fonts": {
+    "regular": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "bold": "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
+  },
+  "offsets": {
+    "head": -450, "param": -370, "lane": -280,
+    "bracket": -220, "bracket_end": -100,
+    "marker": -250, "marker_arrow": -210
+  },
+  "font_sizes": {"head": 46, "param": 38, "lane": 31, "marker": 36, "bp": 32, "primer": 38},
+  "drawing": {
+    "line_width": 3, "bracket_width": 4, "bracket_x_pad": 42,
+    "bar_y_offset": 28, "bar_x_pad": 20,
+    "marker_arrow_width": 4, "marker_arrow_head": 18,
+    "bp_arrow_width": 3, "bp_arrow_head": 16,
+    "arrow_head_ratio": 0.55,
+    "bp_arrow_x_min": 40, "bp_arrow_x_offset": 220,
+    "bp_label_x_min": 8, "bp_label_x_offset": 150,
+    "bp_target_x_offset": 20, "bp_text_y_offset": 20,
+    "primer_bottom_offset": 122
+  }
+}

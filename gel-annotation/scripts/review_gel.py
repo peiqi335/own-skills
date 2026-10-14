@@ -128,6 +128,74 @@ def write_panels(original, overlay, dest, stem, box, padding=0, lane_x=None, sec
     return panels
 
 
+def audit_geometry(original, rows):
+    im_gray = original.convert("L")
+    w, h = im_gray.size
+    audit_data = []
+    warnings = []
+
+    for r_idx, row in enumerate(rows, 1):
+        xs = [float(x) for x in row["lane_x"]]
+        well_val = row.get("well")
+        if well_val is None:
+            ys_list = row.get("lane_y")
+            well_val = (sum(ys_list) / len(ys_list)) if ys_list else (h / 2.0)
+        default_well = float(well_val)
+        spacings = [xs[i+1] - xs[i] for i in range(len(xs)-1)]
+
+        if len(spacings) >= 3 and len(set(round(s, 2) for s in spacings)) == 1:
+            warnings.append(f"row {r_idx}: all lane spacings are exactly identical ({spacings[0]}px); verify comb pitch and avoid manual linear assumption")
+
+        well_audits = []
+        avg_pitch = sum(spacings) / len(spacings) if spacings else 100
+        search_radius = max(18, int(avg_pitch * 0.45))
+        lane_ys = [float(y) for y in row["lane_y"]] if row.get("lane_y") else [default_well] * len(xs)
+
+        for idx, x in enumerate(xs, 1):
+            cur_well_y = lane_ys[idx - 1]
+            row_y0 = max(0, int(round(cur_well_y - 15)))
+            row_y1 = min(h, int(round(cur_well_y + 15)))
+            x_min = max(0, int(round(x - search_radius)))
+            x_max = min(w, int(round(x + search_radius + 1)))
+            prof = [sum(im_gray.getpixel((col, row_y)) for row_y in range(row_y0, row_y1)) / float(max(1, row_y1 - row_y0)) for col in range(x_min, x_max)]
+            cur_idx = max(0, min(len(prof) - 1, int(round(x)) - x_min))
+            dark_idx = min(range(max(0, cur_idx - 15), min(len(prof), cur_idx + 16)), key=lambda k: prof[k])
+            l_peak = max(range(0, dark_idx), key=lambda k: prof[k]) if dark_idx > 0 else 0
+            r_peak = max(range(dark_idx + 1, len(prof)), key=lambda k: prof[k]) if dark_idx < len(prof) - 1 else len(prof) - 1
+            sym_center = x_min + (l_peak + r_peak) / 2.0
+            delta = abs(x - sym_center)
+            status = "ok" if delta <= 4.0 else ("warn" if delta <= 8.0 else "error")
+            if delta > 8.0:
+                warnings.append(f"row {r_idx} well {idx} (x={x}) off-center by {delta:.1f}px (symmetry center {sym_center:.1f})")
+            well_audits.append({"well": idx, "x": x, "symmetry_center": round(sym_center, 1), "delta": round(delta, 1), "status": status})
+
+        bp_audits = []
+        if row.get("bp_guide"):
+            marker_idx = row.get("bp_marker_index", row.get("marker_indices", [0])[0])
+            marker_x = int(round(xs[marker_idx]))
+            for b in row["bp_guide"]:
+                by = int(round(b["y"]))
+                lbl = b.get("label", "")
+                y_min = max(0, by - 30)
+                y_max = min(h, by + 31)
+                vert_prof = [sum(im_gray.getpixel((col, row_y)) for col in range(max(0, marker_x - 15), min(w, marker_x + 16))) / 31.0 for row_y in range(y_min, y_max)]
+                peaks = [y_min + k for k in range(1, len(vert_prof)-1) if vert_prof[k] >= vert_prof[k-1] and vert_prof[k] >= vert_prof[k+1]]
+                if peaks:
+                    nearest = min(peaks, key=lambda py: abs(py - by))
+                    delta_y = abs(by - nearest)
+                else:
+                    nearest = None
+                    delta_y = 999.0
+                status = "ok" if delta_y <= 6.0 else "warn"
+                if delta_y > 12.0:
+                    warnings.append(f"row {r_idx} bp {lbl} (y={by}) deviates by {delta_y:.1f}px from band peak ({nearest})")
+                bp_audits.append({"label": lbl, "y": by, "nearest_band_y": nearest, "delta": round(delta_y, 1), "status": status})
+
+        audit_data.append({"row": r_idx, "wells": well_audits, "bp": bp_audits})
+
+    return {"warnings": warnings, "rows": audit_data}
+
+
 def annotation_review(original, candidate, rows, padding, dest, out, source_hash, text_boxes):
     dest = review_directory(dest)
     raw = Image.new("RGB", candidate.size, "black")
@@ -151,9 +219,13 @@ def annotation_review(original, candidate, rows, padding, dest, out, source_hash
         for category, area in areas:
             parts = write_panels(raw, candidate, dest, f"row{i}_{category}", area, padding, row["lane_x"] if category == "wells" else None)
             panels.extend(dict(p, row=i, category=category) for p in parts)
+    audit_res = audit_geometry(original, rows)
     payload = {"out": str(out), "src_sha256": source_hash,
                "geometry_sha256": geometry_hash(rows), "top_padding": padding,
-               "panels": panels, "visual_status": "not_reviewed"}
+               "panels": panels, "visual_status": "not_reviewed",
+               "quality_audit": audit_res}
+    if audit_res["warnings"]:
+        payload["warnings"] = audit_res["warnings"]
     dest.mkdir(parents=True, exist_ok=True)
     (dest / "review.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return payload

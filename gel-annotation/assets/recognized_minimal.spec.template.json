@@ -1,0 +1,35 @@
+{
+  "presentation_profile": "recognized_minimal_v1",
+  "src": "<project raw image path>",
+  "source_sha256": "<actual raw image SHA-256>",
+  "out": "<fresh output directory>/candidate（标注）.png",
+  "date": "<recorded image date, not today's date>",
+  "primer_name": "<project primer name>",
+  "font_paths": {
+    "regular": "<actual bundled NotoSansCJK-Regular.ttc path>",
+    "bold": "<actual bundled NotoSansCJK-Bold.ttc path>"
+  },
+  "font_sha256": {
+    "regular": "<actual regular font SHA-256>",
+    "bold": "<actual bold font SHA-256>"
+  },
+  "portable_resources": true,
+  "top_padding": 0,
+  "rows": [
+    {
+      "well": "<verified source well-row y>",
+      "lane_x": ["<verified x for every physical well, including empty wells>"],
+      "lane_y": ["<verified y for every physical well>"],
+      "marker_indices": ["<verified zero-based marker indices; [] if explicitly absent>"],
+      "review_box": ["<x0>", "<y0>", "<x1>", "<y1>"],
+      "groups": [
+        {
+          "head": "<project group label>",
+          "lanes": [
+            {"index": "<zero-based physical well index>", "sample_id": "<recorded real identity>", "display_label": "<confirmed presentation label>"}
+          ]
+        }
+      ]
+    }
+  ]
+}

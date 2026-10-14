@@ -1,6 +1,6 @@
 # own-skills
 
-裴崎的 [OpenCode](https://opencode.ai) 自制 skills：给凝胶图标孔、把 BLAST XML 做成离线页、归档 GDV 基因座、把单篇论文做成原图 PPT。
+裴崎的 [OpenCode](https://opencode.ai) 自制 skills：给凝胶图标孔、把 BLAST XML 做成离线页、运行成对 Primer-BLAST 并生成离线看板、归档 GDV 基因座、把单篇论文做成原图 PPT。
 
 本仓库是源码，不是运行时加载点。拷进 OpenCode 的 skills 目录后才会被发现。MIT。
 
@@ -11,6 +11,7 @@
 - [Skills](#skills)
   - [gel-annotation](#gel-annotation)
   - [blast-offline-html](#blast-offline-html)
+  - [primer-blast-results](#primer-blast-results)
   - [gdv-offline-evidence](#gdv-offline-evidence)
   - [paper2ppt](#paper2ppt)
 - [安装位置](#安装位置)
@@ -44,6 +45,28 @@
 
 详细规则在各目录的 `SKILL.md`。未指定输出位置时，agent 按该 skill 的约定落盘，而不是写进本仓库。
 
+### 标准样板与模块 CLI 导航
+
+本机项目标准样板位于 `课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/`；真实输入、身份、样本配置、回放报告和实验边界保留在项目，不灌入通用 skill。
+
+- **凝胶新输入**：见 [模块 README](gel-annotation/README.md) 与 [规范参数模板](gel-annotation/assets/recognized_minimal.spec.template.json)。`gel-annotation/scripts/annotate_gel.py SPEC.json --repo PROJECT --review-dir NEW_REVIEW` 实际执行 opt-in `recognized_minimal_v1`；历史图补丁重建使用独立 `replay_operations.py`，不能继承旧科学事实。
+- **GDV**：见 [模块 README](gdv-offline-evidence/README.md)。`gdv-offline-evidence/scripts/render_gdv.py SPEC.json --input-root PROJECT --validate-only` 核验真实输入；需要绘图依赖时使用项目已有环境，不把缺 Cairo 的普通 Python 当科学输入失败。
+- **BLAST XML**：`blast-offline-html/scripts/render_blast_offline.py INPUT.xml -o NEW_OUTPUT`；不提交网络查询。
+- **成对 Primer-BLAST／离线站点**：见 [接口](primer-blast-results/INTERFACE.md)；总入口由项目整合流程维护。`runtime-sync.json` 保留阶段partial记录，当前四模块同步及窄验证见项目标准样板根的 `runtime-sync-final.json`；不能把模块检查当整体任务或最终视觉验收通过。
+
+项目统一重建使用已归档的 `standard-case.json` 与模块配置，不要求使用者再次提供历史样本spec；新实验仍须提供本次真实输入与身份。命令须使用**不存在的新输出根**：
+
+```bash
+P='/home/qi/文档/课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14'
+python -B "$P/scripts/rebuild_standard.py" \
+  --gdv-python /tmp/opencode/gdv-replay-venv/bin/python \
+  --output "$P/统一回放/fresh-root"
+```
+
+分层边界：GEL的legacy旧图→定稿14张byte一致，原图raw链仍未通过；GDV由模块真实转换，site接入固定rendered资源时是字节复制，不能据复制同一PDF声称真实转换的PDF字节确定。CLI产物与机械比对不等于科学来源或最终视觉认证。
+
+本机导航：[最终候选站点](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/统一回放/final/run-A/site/index.html) · [整合交付报告](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/统一回放/final/交付/phase2-verification.json) · [最终runtime同步审计](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/runtime-sync-final.json)。这些跨目录链接只供本机导航，不是可移植包字段。
+
 ## 可选：不启动 OpenCode 看产物
 
 脚本可以单独跑。下面用自带夹具生成一页离线 BLAST HTML：
@@ -72,9 +95,7 @@ python3 blast-offline-html/scripts/render_blast_offline.py \
 
 **得到什么**
 
-原图旁一份新 PNG（引线准确落在孔心、支持分组层级、空孔避让与已核实的 Ladder 标尺，不覆盖原图）：
-
-![凝胶标注示例](gel-annotation/assets/example_annotated_gel.png)
+原图旁一份新 PNG（引线准确落在孔心、支持分组层级、空孔避让与已核实的 Ladder 标尺，不覆盖原图）。
 
 尚无确认方案时，agent 先给逐孔表和执行方案，等你确认再画。几何来自本轮对这张图的扫描；身份只能来自你的说明或你指定的记录。
 
@@ -108,6 +129,12 @@ blast-offline/
 
 把 BLAST 命中当成物种鉴定，或从胶图反推坐标。
 
+### primer-blast-results
+
+读取成对 F/R 引物，向 NCBI 提交 Primer-BLAST，或将已有报告与 `status.json` 打包成离线看板。支持基因组 `refseq_representative_genomes` 和转录组 `refseq_rna`；输出总入口、引物×物种矩阵、报告预览和哈希清单。详细输入及命令见 [SKILL.md](primer-blast-results/SKILL.md)。
+
+2026-10-14 已补状态与来源保护：超时、错误和证据不足分别登记，不合成阴性；原始响应与展示页分开归档；复用前核对引物、物种、数据库、参数和哈希。看板必须写入新目录，`--force` 不再允许覆盖已有目录。接口与旧归档处理见 [INTERFACE.md](primer-blast-results/INTERFACE.md)。预测结果不是湿实验验证结论，历史重建页缺原始响应时保留为来源待核。
+
 ### gdv-offline-evidence
 
 把 NCBI GDV / Sequence Viewer 的指定基因座做成可断网打开的多轨道 PDF、SVG、PNG，并留下来源与检查记录。
@@ -125,6 +152,8 @@ blast-offline/
 ![CAT_1 多轨道离线证据图](gdv-offline-evidence/assets/cat1-standard/CAT_1_enhanced.png)
 
 轨道保持 NCBI 官方显示；RNA-seq 是公共证据，变异轨道不是本样本基因型。完整标准在 [`assets/cat1-standard/`](gdv-offline-evidence/assets/cat1-standard/)。
+
+有外显子的输入须绑定 `product_report` 并按转录本版本、基因组 accession、链向及完整坐标校验。轨道内容与视觉验收仍需人工复核；原件标题端点观测不等于已知坐标约定。冻结 CAT 示例的空 EVA 窗口已更正登记，历史图像不重绘。
 
 **不要指望它**
 
@@ -182,3 +211,11 @@ blast-offline/
 ## License
 
 [MIT](LICENSE) © 2026 裴崎
+
+## 本地运行时同步
+
+2026-10-14 原样同步本地运行时，排除 Python 缓存。前四个技能来自 `/home/qi/文档/课题实验/.agents/skills/`（凝胶、BLAST XML、Primer-BLAST、GDV）；`paper2ppt` 来自 `/home/qi/文档/法医动物非人源/.agents/skills/`。
+
+同日依据实际结果修复凝胶、Primer-BLAST 与 GDV 技能，并同步上述实验仓库运行时副本。凝胶新增可选简洁版、真实样本与展示标签分离、随图回放清单及候选覆盖保护；未反推旧图配置或修改实验原件。技能变更在新的 OpenCode 会话中重新加载；如需立即使用，重启 OpenCode。
+
+实际检查、独立审查及仍待核事项见 [修复验收记录](修复验收_2026-10-14.md)。

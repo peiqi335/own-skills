@@ -374,6 +374,190 @@ def cmd_hint(src: Path, dest: Path, row: str, n: int | None, x0: int | None, x1:
     )
 
 
+def cmd_detect_wells(src: Path, dest: Path, row: str, x0: int | None, x1: int | None, n: int | None = None, well1: int | None = None) -> None:
+    im = Image.open(src).convert("L")
+    w, h = im.size
+    y0, y1 = parse_ints(row, 2, "row")
+    left = 0 if x0 is None else max(0, x0)
+    right = w if x1 is None else min(w, x1)
+    box = clip_box((w, h), [left, y0, right, y1])
+
+    prof = [sum(im.getpixel((x, y)) for y in range(box[1], box[3])) / float(box[3] - box[1]) for x in range(box[0], box[2])]
+    contrast = max(prof) - min(prof) if prof else 0.0
+    contrast_warning = None
+    if contrast < 10.0:
+        contrast_warning = f"low contrast in row region ({contrast:.1f} < 10px); verify well-row y coordinates with scan_gel.py grid"
+    smooth = moving_average(prof, 7)
+    mean_v = sum(smooth) / len(smooth)
+    norm = [v - mean_v for v in smooth]
+
+    min_lag = max(25, int(w * 0.015))
+    max_lag = min(250, len(norm) // 2)
+    corrs = []
+    for lag in range(min_lag, max_lag):
+        c = sum(norm[i] * norm[i + lag] for i in range(len(norm) - lag))
+        corrs.append((lag, c))
+    best_lag = max(corrs, key=lambda t: t[1])[0] if corrs else 100
+
+    phase_scores = []
+    for phase in range(best_lag):
+        score = 0
+        cnt = 0
+        cur = phase
+        while cur < len(smooth):
+            score += (mean_v - smooth[cur])
+            cnt += 1
+            cur += best_lag
+        phase_scores.append((phase, score / max(1, cnt)))
+
+    best_phase = max(phase_scores, key=lambda t: t[1])[0]
+    first_well = box[0] + best_phase
+    if well1 is not None:
+        first_well = well1
+
+    cur = first_well
+    while cur - best_lag >= box[0] + 10:
+        cur -= best_lag
+
+    grid_xs = []
+    while cur <= box[2] - 10:
+        grid_xs.append(cur)
+        cur += best_lag
+
+    if n is not None and len(grid_xs) > n:
+        grid_xs = grid_xs[:n]
+
+    wells = []
+    for i, gx in enumerate(grid_xs, 1):
+        win = max(8, int(best_lag * 0.2))
+        dark_x = min(range(max(box[0], gx - win), min(box[2], gx + win + 1)),
+                     key=lambda x: prof[x - box[0]])
+        l_lo = max(box[0], dark_x - int(best_lag * 0.55))
+        l_hi = max(box[0], dark_x - int(best_lag * 0.15))
+        left_wall = max(range(l_lo, l_hi), key=lambda x: prof[x - box[0]]) if l_hi > l_lo else (dark_x - int(best_lag * 0.3))
+
+        r_lo = min(box[2], dark_x + int(best_lag * 0.15))
+        r_hi = min(box[2], dark_x + int(best_lag * 0.55))
+        right_wall = max(range(r_lo, r_hi), key=lambda x: prof[x - box[0]]) if r_hi > r_lo else (dark_x + int(best_lag * 0.3))
+
+        sym_center = int(round((left_wall + right_wall) / 2.0))
+        center = sym_center if abs(sym_center - dark_x) <= max(3, int(best_lag * 0.08)) else int(round(dark_x * 0.5 + sym_center * 0.5))
+
+        spacing = (center - wells[-1]["x"]) if wells else None
+        wells.append({
+            "well": i,
+            "x": center,
+            "x_dark": dark_x,
+            "left_wall": left_wall,
+            "right_wall": right_wall,
+            "symmetry_diff": abs(center - dark_x),
+            "spacing": spacing
+        })
+
+    im_rgb = Image.open(src).convert("RGB")
+    crop = im_rgb.crop((box[0], max(0, box[1] - 40), box[2], min(h, box[3] + 40)))
+    draw = ImageDraw.Draw(crop)
+    fnt = font(18 if crop.height < 150 else 22)
+    for w_info in wells:
+        rx = w_info["x"] - box[0]
+        draw.line([(rx, 0), (rx, crop.height)], fill=CYAN, width=2)
+        lw = w_info["left_wall"] - box[0]
+        rw = w_info["right_wall"] - box[0]
+        draw.line([(lw, crop.height - 15), (lw, crop.height)], fill=YELLOW, width=1)
+        draw.line([(rw, crop.height - 15), (rw, crop.height)], fill=YELLOW, width=1)
+        draw.text((rx - 10, 4), f"W{w_info['well']}", fill=YELLOW, font=fnt)
+
+    out = dest / "detect_wells.jpg"
+    save_jpeg(crop, out)
+    res = {
+        "stage": "detect-wells",
+        "out": str(out),
+        "src": str(src),
+        "src_sha256": sha256(src),
+        "pitch": round(float(best_lag), 1),
+        "n_wells": len(wells),
+        "lane_x": [w_info["x"] for w_info in wells],
+        "wells": wells
+    }
+    if contrast_warning:
+        res["warning"] = contrast_warning
+    emit(res)
+
+
+def cmd_detect_bp(src: Path, dest: Path, marker_x: int, y_range: str, n_bands: int = 7, width: int = 40) -> None:
+    im = Image.open(src).convert("L")
+    w, h = im.size
+    y0, y1 = parse_ints(y_range, 2, "y_range")
+    x_left = max(0, marker_x - width // 2)
+    x_right = min(w, marker_x + width // 2 + 1)
+
+    prof = [sum(im.getpixel((x, y)) for x in range(x_left, x_right)) / float(x_right - x_left) for y in range(y0, y1)]
+    win = 5
+    smooth = moving_average(prof, win)
+
+    min_dist = max(24, (y1 - y0) // (n_bands + 5))
+    candidates = []
+    for i in range(5, len(smooth) - 5):
+        if smooth[i] >= smooth[i - 1] and smooth[i] >= smooth[i + 1]:
+            local_min = min(smooth[max(0, i - 15):min(len(smooth), i + 16)])
+            prom = smooth[i] - local_min
+            if prom >= 3.0:
+                if not candidates or (i - candidates[-1][0]) >= min_dist:
+                    candidates.append((i, smooth[i], prom))
+                elif prom > candidates[-1][2]:
+                    candidates[-1] = (i, smooth[i], prom)
+
+    if len(candidates) > n_bands:
+        scored = sorted(candidates, key=lambda t: t[2], reverse=True)[:n_bands]
+        sorted_peaks = sorted(scored, key=lambda t: t[0])
+    else:
+        sorted_peaks = sorted(candidates, key=lambda t: t[0])
+
+    strongest_idx = max(range(len(sorted_peaks)), key=lambda i: sorted_peaks[i][1]) if sorted_peaks else -1
+
+    bands = []
+    for i, (pi, b, prom) in enumerate(sorted_peaks, 1):
+        bands.append({
+            "index": i,
+            "y": y0 + pi,
+            "brightness": round(float(b), 1),
+            "prominence": round(float(prom), 1),
+            "strongest": (i - 1 == strongest_idx)
+        })
+
+    im_rgb = Image.open(src).convert("RGB")
+    crop_box = clip_box((w, h), [max(0, marker_x - 120), y0, min(w, marker_x + 80), y1])
+    crop = im_rgb.crop(crop_box)
+    draw = ImageDraw.Draw(crop)
+    fnt = font(20)
+    for b_info in bands:
+        rel_y = b_info["y"] - y0
+        target_rx = marker_x - crop_box[0]
+        draw.line([(target_rx - 60, rel_y), (target_rx - 5, rel_y)], fill=RED, width=2)
+        draw.polygon([(target_rx - 5, rel_y), (target_rx - 14, rel_y - 4), (target_rx - 14, rel_y + 4)], fill=RED)
+        draw.text((8, rel_y - 10), f"y={b_info['y']}", fill=YELLOW, font=fnt)
+
+    out = dest / "detect_bp.jpg"
+    save_jpeg(crop, out)
+
+    ladder_500 = ["500bp", "400bp", "300bp", "200bp", "150bp", "100bp", "50bp"]
+    rec_guide = []
+    if len(bands) == 7:
+        for lbl, b_info in zip(ladder_500, bands):
+            rec_guide.append({"label": lbl, "y": b_info["y"]})
+
+    emit({
+        "stage": "detect-bp",
+        "out": str(out),
+        "src": str(src),
+        "src_sha256": sha256(src),
+        "marker_x": marker_x,
+        "n_bands": len(bands),
+        "bands": bands,
+        "recommended_guide_500bp": rec_guide if rec_guide else None
+    })
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Per-gel scan overlays for visual positioning; never writes the annotation PNG")
     parser.add_argument("--repo", type=Path, default=Path.cwd())
@@ -417,6 +601,21 @@ def build_parser() -> argparse.ArgumentParser:
     hint.add_argument("--n", type=int)
     hint.add_argument("--x0", type=int)
     hint.add_argument("--x1", type=int)
+
+    dw = sub.add_parser("detect-wells", help="auto-detect physical well centers, comb pitch, and well walls via autocorrelation")
+    dw.add_argument("src", type=Path)
+    dw.add_argument("--row", required=True, help="y0,y1")
+    dw.add_argument("--x0", type=int)
+    dw.add_argument("--x1", type=int)
+    dw.add_argument("--n", type=int, help="expected well count")
+    dw.add_argument("--well1", type=int, help="optional anchor x for the first well")
+
+    dbp = sub.add_parser("detect-bp", help="auto-detect marker band y peaks along the marker lane")
+    dbp.add_argument("src", type=Path)
+    dbp.add_argument("--marker-x", required=True, type=int)
+    dbp.add_argument("--y-range", required=True, help="y0,y1 vertical range containing bands")
+    dbp.add_argument("--n-bands", type=int, default=7, help="expected band count, default 7")
+    dbp.add_argument("--width", type=int, default=40, help="sampling slice width, default 40")
     return parser
 
 
@@ -464,6 +663,10 @@ def main(argv: list[str] | None = None) -> None:
         cmd_zoom(src, dest, args.at, args.size)
     elif args.cmd == "hint":
         cmd_hint(src, dest, args.row, args.n, args.x0, args.x1)
+    elif args.cmd == "detect-wells":
+        cmd_detect_wells(src, dest, args.row, args.x0, args.x1, args.n, args.well1)
+    elif args.cmd == "detect-bp":
+        cmd_detect_bp(src, dest, args.marker_x, args.y_range, args.n_bands, args.width)
     else:
         raise SystemExit(f"unknown command {args.cmd}")
 

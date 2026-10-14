@@ -1,0 +1,68 @@
+{
+  "reports": [
+    {
+      "product": {
+        "gene_id": "101090861",
+        "symbol": "SOWAHB",
+        "description": "sosondowah ankyrin repeat domain family member B",
+        "tax_id": "9685",
+        "taxname": "Felis catus",
+        "common_name": "domestic cat",
+        "type": "PROTEIN_CODING",
+        "transcripts": [
+          {
+            "accession_version": "XM_011281731.4",
+            "length": 3664,
+            "cds": {
+              "accession_version": "XM_011281731.4",
+              "range": [
+                {
+                  "begin": "695",
+                  "end": "3043",
+                  "orientation": "plus"
+                }
+              ]
+            },
+            "genomic_locations": [
+              {
+                "genomic_accession_version": "NC_058371.1",
+                "sequence_name": "Chromosome B1 Reference F.catus_Fca126_mat1.0 Primary Assembly",
+                "genomic_range": {
+                  "begin": "142723522",
+                  "end": "142727185",
+                  "orientation": "plus"
+                },
+                "exons": [
+                  {
+                    "begin": "142723522",
+                    "end": "142727185",
+                    "orientation": "plus",
+                    "order": 1
+                  }
+                ]
+              }
+            ],
+            "protein": {
+              "accession_version": "XP_011280033.1",
+              "name": "ankyrin repeat domain-containing protein SOWAHB",
+              "length": 782
+            },
+            "type": "PROTEIN_CODING_MODEL"
+          }
+        ],
+        "transcript_count": 1,
+        "protein_count": 1,
+        "transcript_type_counts": [
+          {
+            "type": "PROTEIN_CODING_MODEL",
+            "count": 1
+          }
+        ]
+      },
+      "query": [
+        "XM_011281731.4"
+      ]
+    }
+  ],
+  "total_count": 1
+}

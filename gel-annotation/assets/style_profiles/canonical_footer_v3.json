@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "name": "canonical_footer_v3",
+  "role": "date_primer_footer",
+  "language": "en",
+  "layout_engine": "RAQM",
+  "face_index": 0,
+  "boundary": "Explicit reproducible shaping policy; not a claim about the unrecorded historical locale. Date/primer/text/geometry remain project inputs."
+}

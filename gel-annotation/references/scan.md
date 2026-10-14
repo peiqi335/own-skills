@@ -14,12 +14,16 @@ python3 .agents/skills/gel-annotation/scripts/scan_gel.py grid SRC
 
 ```text
 python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 wells SRC --row y0,y1 --x0 x0 --x1 x1
+python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 detect-wells SRC --row y0,y1 --x0 x0 --x1 x1 [--n N]
+python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 detect-bp SRC --marker-x x --y-range y0,y1 [--n-bands 7]
 python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 zoom SRC --at x,y --size 240
 python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/position lanes --spec SPEC.json
 python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 lanes SRC --xs x1,x2,x3 --well y --ys y1,y2,y3 --span top,bottom
 python3 .agents/skills/gel-annotation/scripts/scan_gel.py --out-dir RUN/row1 bp SRC --bands label:y,label:y --marker-x x
 ```
 
+- **`detect-wells` 候选辅助**：通过一维灰度列积分与周期自相关输出候选 pitch、孔心 `lane_x` 及 `detect_wells.jpg`。结果不能代替原图逐孔孔壁核验，不能直接认定孔心或所有物理孔。
+- **`detect-bp` 候选辅助**：沿 Marker 提取亮度峰及预览，不能代替原图条带核验或证明 Ladder 身份。输出中的推荐 500bp 列表只是已有候选模板，不是全球默认；课题实验项目可引用已核实的 `AGENTS.md:65`，其他项目必须另有规格依据。
 - 新流程的 `lanes --spec SPEC.json` 读取 spec 的全部 `rows`，不再手抄 `--xs`。spec 顶层 `source_sha256` 为新流程必填；它必须与本轮原图一致。旧命令继续保留，旧 spec 可没有该字段；若旧 spec 提供了 hash 也必须匹配。
 - `lanes --spec` 自动输出未覆盖原图和叠线对照的 1:1 自适应分栏，必要时按重叠边界继续拆分；同时覆盖全部给定孔和边缘孔，不把一张只含给定坐标的图说成保证识别所有孔。批量读取同一阶段的全部分栏，不把不同阶段的预览混用。
 - `wells` 读取 `panels`，`lanes` 读取 `review_panels[*].path` 中的全部分栏；已有完整分栏时无需重复读取同内容长条或整张定位 `out`。其他命令实际读 `out`。分栏保留原始像素，不固定三分；顶部黄色刻度为原图 x，左侧黄色刻度为原图 y，刻度位于图像外。记录裁图原点和 scale，不把显示缩放后的像素当原图坐标。

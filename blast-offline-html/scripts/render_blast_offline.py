@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import html as htmlmod
 import re
 import math
@@ -56,6 +57,9 @@ def parse_xml(path: Path) -> dict:
         "query_def": (root.findtext("BlastOutput_query-def") or "").strip(),
         "expect": root.findtext("BlastOutput_param/Parameters/Parameters_expect") or "",
         "hits": [],
+        "xml_fields": {n.tag: n.text or "" for n in root if len(n) == 0},
+        "parameters": {n.tag: n.text or "" for n in root.findall("BlastOutput_param/Parameters/*")},
+        "statistics": {n.tag: n.text or "" for n in iterations[0].findall("Iteration_stat/Statistics/*")},
     }
     used_ids = set()
     for hit in iterations[0].findall("Iteration_hits/Hit"):
@@ -100,6 +104,7 @@ def parse_xml(path: Path) -> dict:
                     "qseq": hsp.findtext("Hsp_qseq") or "",
                     "mid": hsp.findtext("Hsp_midline") or "",
                     "hseq": hsp.findtext("Hsp_hseq") or "",
+                    "xml_fields": {n.tag: n.text or "" for n in hsp},
                 }
             )
         if not hsps:
@@ -125,6 +130,7 @@ def parse_xml(path: Path) -> dict:
                 "hsps": hsps,
                 "best": max(hsps, key=lambda x: x["bits"]),
                 "total": sum(x["bits"] for x in hsps),
+                "xml_fields": {n.tag: n.text or "" for n in hit if len(n) == 0},
             }
         )
     return rec
@@ -375,6 +381,7 @@ def page_html(rec: dict, rid: str = "", has_index: bool = False, css_href: str =
 <h2>Alignments</h2>
 {''.join(aln_blocks)}
 </main>
+<script type="application/json" id="scientific-record">{json.dumps(rec, ensure_ascii=False, sort_keys=True).replace('<', chr(92) + 'u003c').replace('>', chr(92) + 'u003e').replace('&', chr(92) + 'u0026')}</script>
 </body>
 </html>
 """

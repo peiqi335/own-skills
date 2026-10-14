@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "name": "recognized_minimal_v1",
+  "base_style_profile": "second_batch_v1",
+  "annotation_profile": "report_minimal",
+  "primer_separator": " · ",
+  "primer_language": "en",
+  "primer_layout_engine": "RAQM",
+  "primer_face_index": 0,
+  "boundary": "Opt-in presentation in the recognized family, not absolute geometry of any historical image. All scientific facts and coordinates must be supplied by the project."
+}

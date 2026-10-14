@@ -1,6 +1,6 @@
 # 第二批标注风格与绘图接口
 
-参考目录：`1.原始资料/实验数据/电泳 第二批/`。先实际看与本次形态接近的图：
+参考目录：`1.原始资料/实验数据/01.早期PCR与电泳/电泳 第二批/`。先实际看与本次形态接近的图：
 
 - 双排整胶：`9.5凝胶1（标注）（第四批4.1）.jpg`。
 - 宽半胶、空孔和梯度：`9.6凝胶2（标注）（第七批兔引物用量梯度、鸡）.png`。
@@ -31,7 +31,7 @@
 | `well` | 此排参考孔槽 y；只作兼容参考高度，不代替逐孔孔壁定中心 |
 | `lane_x` | 按物理孔号从左到右的每孔原图 x，包含空孔，严格递增；不是实验上样顺序 |
 | `lane_y` | 可选，按物理孔逐孔的原图 y；省略则全排采用 well |
-| `groups` | 标签组列表；每组 lanes 包含 0-based index 和 name |
+| `groups` | 标签组列表；每组 lanes 包含 0-based index，兼容 name，可选 sample_id、display_label、loading_order |
 | `marker_indices` | 本排按物理孔建立的 0-based Marker 索引；Marker 必须锚定实际孔位 |
 | `font_scale` | 本排字号比例，默认 1 |
 | `y` | 可选，各标签层原图绝对 y，用于避开条带及拥挤布局 |
@@ -48,6 +48,21 @@
 `top_padding` 默认 0，可按需要增加顶部黑色留白。所有 x/y 始终填写未加边的原图坐标；渲染器统一平移，不能手动重复加偏移。原图像素不缩放。新增留白区可用负的原图 y 排字。
 
 组支持 color、head、param、lanes，以及可选 y_shift（只移组名/参数）、draw_lines、draw_bracket、bar。总组标题可用 draw_lines=false、draw_bracket=false 的组横跨多个孔；实际引线组不得重复占用孔或 Marker。参考 [lane_spec.example.json](../assets/lane_spec.example.json) 的字段结构，示例不提供可套用孔坐标或 ladder 数值；其中 hash 是明显占位符，不能直接运行。
+
+### 身份、minimal profile 与归档
+
+- lane 的 `display_label` 仅用于绘图：缺失或 null 回退 `name`，只有空字符串显式隐藏文字。`sample_id` 只记录真实个体身份，不绘制、不去重；同一 sample_id 可对应不同展示编号。`loading_order` 只保留记录，绝不重排物理坐标。相同展示标签仍沿用原先合并居中的行为。
+- 默认 `annotation_profile="default"` 保持原绘图行为。可选顶层或每排 `annotation_profile="report_minimal"`：机械隐藏所有 group param 和参数 bar，不回收原层间距；`control="NTC"` 或 `control="PC"` 的组隐藏 head，仅用原 lane 小字。所有人/非人 PC、NTC 在隐藏 head 前必须至少有一个非空白的明确替代 lane 标签，缺失则保存前报错，不自动制造身份。括号、引线、字号、颜色和孔心不变。控制组必须在 spec 显式标明，脚本不从文字猜控制身份。
+- 非人 PC（group `species` 非 `"human"`）给各孔同一个事实 display_label，或仅一个孔有标签，以原合并机制实现单处展示；不同非空标签会报错，不自动改写。人 PC 用 `species="human"`，在 lane 明确给出 `PC/9948` 等已核实标签；脚本不会自动制造 9948 身份或强改已有标签。NTC 同样由 spec 明确给出标签。
+- minimal 必须明确提供 `date` 和 `primer_name`（每排可覆盖顶层），footer 在原 `primer` 位置绘制 `date + 空格 + primer_name`；不使用旧 primer_line、不读取 mtime。`date_evidence` 可记 `kind="specified"` 或 `kind="registration_cross_calibrated"`、依据与原登记日期。默认 profile 的 primer_line 不变。
+- 每次新输出自动写 `OUTPUT.annotation-manifest.json`，可用 CLI `--manifest ARCHIVE.json` 指定位置（相对路径仍以 `--repo` 为基准）。其中 `spec` 保存实际使用的 rows、标签、profile 与几何，`sources` / `output` 保存 SHA-256 和相对路径，`sample_mapping` 覆盖每排所有物理孔（row 为 1-based，index 为 0-based，physical_index 为 1-based）。来源与输出路径基准是 manifest 所在目录；迁移时保留相对目录结构。
+- 顶层可选 `source_annotations=[{"path":"已有标注.png","sha256":"已核实hash"}]`；记录并检查已有标注 hash，省略 sha256 时实际计算。原图总会记录 hash；不得把这些来源作为输出覆盖。
+- manifest 必须是 `.json`，不得与原图、输出、已有标注来源或输入 spec 同路径（已有文件硬链接别名也被保护）。CLI 自动保护输入 spec；API 可用 `protected_inputs=[Path(...)]` 补充保护。输出、manifest 和 review 目录及其祖先不得是符号链接，包括含 `link/../` 的路径；先检查原路径，不能先 resolve 再丢失链接语义。
+- `--overwrite` 只允许一对已存在、合法的本工具候选 output/manifest：旧 manifest 的原图 hash、src/out 路径关系、当前 output SHA-256 必须匹配；缺少一件、无关 JSON/PNG 或 hash 不匹配均保存前拒绝，应使用新路径。不能仅凭文件名含 `（标注）` 判定归属。
+- review 目录须为新目录或空目录，且不得包含输出、归档 manifest 或任何受保护输入；候选重跑使用新的 review 路径，避免 review.json 或局部图覆盖来源。上述检查与标签校验均在创建输出目录、保存图之前完成；不提供通用事务或并发写入防护。
+- 归档 spec 重跑：提取 manifest 的 `spec` 为 JSON，并以 manifest 目录作为 `--repo`，指定一个新的 out。review.json 仍只用于候选视觉核验；归档 manifest 的 `visual_status="not_reviewed"` 不是视觉通过声明。
+- 文字修订用可选顶层 `patch_record` 保存 `changes`（row/index/field/before/after）及 `geometry_evidence`；已有标注作为 source_annotations 登记。复用可核实的旧 spec，不从旧成图逆推几何；没有旧 spec 时只记录修订事实和未知项，不伪造历史 spec。本次工程修复不补造 14 张旧图的 spec。
+- 50/25/11 是本项目胶型约定，不是通用标准。课题实验项目的 `bp_source` 可引用已核实 `AGENTS.md:65`（500/400/300/200/150/100/50 bp）；不将此默认用于其他项目。
 
 ## 验收
 
