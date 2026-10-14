@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>合成测试夹具 · 未提交 NCBI · 不代表检索结论 · 检索矩阵</title><link rel="stylesheet" href="assets/panel.css"></head><body>
+<header><div class="nav-top"><a href="../index.html">← 返回总入口</a><span class="curr">成对 Primer-BLAST 检索矩阵</span></div>
+<h1>合成测试夹具 · 未提交 NCBI · 不代表检索结论</h1><p class="sub">点击单元格预览展示派生页；原始归档另存，实时 NCBI 作业链接可能过期。</p>
+<div class="callout"><strong>判读边界：</strong>“未找到目标模板”仅表示该次限定数据库与参数下的检索返回状态，不等于无交叉扩增或湿实验阴性。</div></header>
+<main><div class="table-card"><div class="card-header"><h3 class="card-title">成对产物与检索状态矩阵</h3></div>
+<div class="matrix-container"><table class="matrix-table"><thead><tr><th class="sticky-col">引物对 \ 模板</th>
+<th>RAT（大鼠）</th>
+<th>CAT（猫）</th>
+<th>DOG（狗）</th>
+</tr></thead><tbody>
+<tr><td class="sticky-col"><strong>DEMO_fixture</strong></td>
+<td class="cell-target" role="button" tabindex="0" data-report="RAT-display.html" data-title="DEMO_fixture on RAT · 报告有产物 82 bp, 52 bp · 参数绑定 pending" data-live="" title="报告有产物 82 bp, 52 bp · 参数绑定 pending">82 bp, 52 bp · 参数绑定 pending</td>
+<td class="cell-cross-weak" role="button" tabindex="0" data-report="CAT-display.html" data-title="DEMO_fixture on CAT · 解析待核：请查看原始报告" data-live="" title="解析待核：请查看原始报告">解析待核</td>
+<td class="cell-cross-weak" role="button" tabindex="0" data-report="DOG-display.html" data-title="DEMO_fixture on DOG · 未完成：error" data-live="" title="未完成：error">待核查</td>
+</tr>
+</tbody></table></div></div></main>
+<div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-label="报告预览">
+<div class="modal-content"><div class="modal-header"><h3 class="modal-title" id="modalTitle"></h3>
+<a id="modalLiveLink" class="btn btn-ncbi" target="_blank" rel="noopener noreferrer">NCBI 作业链接</a>
+<a id="modalNewTabLink" class="btn btn-link" target="_blank">新标签页查看报告</a>
+<button class="modal-close" id="closeModal" aria-label="关闭">&times;</button></div>
+<div class="modal-body"><iframe id="modalIframe" class="modal-iframe" src="about:blank" title="归档报告展示派生页"></iframe></div></div></div>
+<script>
+const modal = document.getElementById('previewModal');
+function openCell(cell) {
+  if (!cell || !cell.dataset.report) return;
+  document.getElementById('modalTitle').textContent = cell.dataset.title;
+  document.getElementById('modalIframe').src = cell.dataset.report;
+  document.getElementById('modalNewTabLink').href = cell.dataset.report;
+  const live = document.getElementById('modalLiveLink');
+  live.href = cell.dataset.live || '#';
+  live.style.display = cell.dataset.live ? 'inline-flex' : 'none';
+  modal.classList.add('open');
+}
+function closeModal() { modal.classList.remove('open'); document.getElementById('modalIframe').src = 'about:blank'; }
+document.addEventListener('click', e => { const cell = e.target.closest('td[data-report]'); if (cell) openCell(cell); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('td[data-report]')) { e.preventDefault(); openCell(e.target); } });
+document.getElementById('closeModal').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+</script></body></html>

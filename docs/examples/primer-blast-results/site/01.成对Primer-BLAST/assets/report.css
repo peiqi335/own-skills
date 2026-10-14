@@ -1,0 +1,337 @@
+/* ==========================================================================
+   NCBI Primer-BLAST Complete Official Standalone Stylesheet
+   ========================================================================== */
+
+:root {
+  --ncbi-blue: #205493;
+  --ncbi-dark-blue: #112e51;
+  --ncbi-light-blue: #0071bc;
+  --ncbi-border: #cbd5e1;
+  --ncbi-bg-gray: #f8fafc;
+  --text-color: #1e293b;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: #ffffff;
+}
+
+/* 顶部 NCBI 官方实时链接横幅 */
+.ncbi-live-bar {
+  background: #eff6ff;
+  border-bottom: 2px solid #2563eb;
+  padding: 12px 24px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.ncbi-live-bar a.live-link {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.ncbi-live-bar a.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ncbi-live-bar a.nav-link:hover {
+  background: #1d4ed8;
+}
+
+/* USA Banner 官方顶部横幅 */
+.usa-banner {
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 12px;
+  padding: 6px 24px;
+}
+.usa-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.usa-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.usa-banner-inner img {
+  width: 16px;
+  height: 11px;
+}
+.usa-banner-inner p {
+  margin: 0;
+  color: #444;
+}
+.usa-banner-button {
+  background: none;
+  border: none;
+  color: #0071bc;
+  text-decoration: underline;
+  font-size: 12px;
+  cursor: pointer;
+}
+.usa-banner-content {
+  display: none;
+}
+
+/* NCBI 官方 Header 导航 */
+header.ncbi-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ncbi-header__logo img {
+  height: 38px;
+}
+.usa-skipnav, .usa-sr-only {
+  display: none;
+}
+.account-panel, #account_info_content, .ui-helper-reset .helpbox, #hlp11 {
+  display: none;
+}
+
+/* 主容器 */
+#wrap, #content, #mainCont {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 24px 50px;
+}
+
+/* Primer-BLAST 标题条 */
+.resHeader, .blRes h1, h1 {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--ncbi-dark-blue);
+  margin: 16px 0 10px;
+}
+.sub {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* 检索信息与参数卡片 (Search Summary) */
+.resBox, #searchform, .top-details {
+  background: #f8fafc;
+  border: 1px solid var(--ncbi-border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+#statInfo {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+#statInfo th, #statInfo td {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+#statInfo th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #334155;
+  width: 35%;
+}
+
+/* 详细比对与引物结果区 (Alignments & Results) */
+#alignments {
+  margin-top: 24px;
+}
+.prPairInfo {
+  background: #ffffff;
+  border: 1px solid var(--ncbi-border);
+  border-radius: 8px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.prPairInfo h2 {
+  font-size: 16.5px;
+  font-weight: bold;
+  color: var(--ncbi-dark-blue);
+  margin: 0 0 12px 0;
+  border-bottom: 2px solid var(--ncbi-light-blue);
+  padding-bottom: 6px;
+}
+
+/* Primer Pair 详细表格 */
+.prPairInfo table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 13px;
+}
+.prPairInfo table th, .prPairInfo table td {
+  padding: 9px 12px;
+  border: 1px solid var(--ncbi-border);
+  text-align: left;
+}
+.prPairInfo table th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+.prPairInfo table td {
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* 产物分支与分类标头 */
+.hidden {
+  display: none !important;
+}
+.hidden.shown {
+  display: block !important;
+}
+.prPairTl {
+  font-weight: bold;
+  font-size: 14.5px;
+  color: #1e3a8a;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  margin: 8px 0 14px;
+}
+
+/* 比对详情区与 Accession 条目 */
+.prPairDtl {
+  padding: 4px 0 16px;
+  font-size: 13.5px;
+}
+.prPairDtl a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* 比对对齐 ASCII 文本框 (<pre>) */
+.prPairDtl pre, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 14px 18px !important;
+  margin: 10px 0 18px !important;
+  overflow-x: auto !important;
+  color: #0f172a !important;
+}
+
+/* 工具条与按钮 */
+.right-tools {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  display: flex;
+  gap: 8px;
+}
+.toolsCtr, input[type="submit"], button {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.toolsCtr:hover, input[type="submit"]:hover, button:hover {
+  background: #e2e8f0;
+}
+
+/* 官方 Footer 紧凑排版 */
+footer {
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  margin-top: 40px;
+  padding: 24px 20px;
+  font-size: 12px;
+  color: #64748b;
+}
+footer .grid-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+footer a {
+  color: #475569;
+  text-decoration: none;
+  margin-right: 12px;
+}
+footer a:hover {
+  text-decoration: underline;
+  color: #0f172a;
+}
+footer svg {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  fill: #64748b;
+}
+.icon-section_container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Keep the archived NCBI result text while presenting the result first. */
+#wrap > .usa-banner,
+#wrap > .ncbi-header,
+#wrap > #navcontent,
+#wrap > div:not(#content-wrap),
+#content-wrap > footer,
+#content-wrap .pageTitle .helpbox,
+#content .flr,
+#content .right-tools,
+#alignInfo > #reanalysisform,
+#alignInfo > .reanlz,
+#content .sectAccordion {
+  display: none !important;
+}
+#wrap { max-width: none; margin: 0; padding: 0; }
+#content-wrap { max-width: 1160px; margin: 0 auto; padding: 14px 20px 36px; }
+#content { max-width: none; margin: 0; padding: 0; }
+#alignInfo { display: block !important; }
+#summary { margin: 10px 0 14px; }
+#alignments { margin-top: 12px; }
+#content-wrap .pageTitle { margin: 0 0 12px; }
+#content-wrap .pageTitle h1 { margin: 0; }
+@media (max-width: 680px) {
+  #content-wrap { padding: 12px 14px 24px; }
+  .prPairInfo { padding: 14px; }
+}

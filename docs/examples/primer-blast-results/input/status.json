@@ -1,0 +1,166 @@
+{
+  "schema_version": 2,
+  "created_utc": "2026-01-01T00:00:00Z",
+  "database": "refseq_representative_genomes",
+  "provenance": "Synthetic public test fixture; NOT NCBI responses; no requests submitted",
+  "species_panel": [
+    {
+      "code": "RAT",
+      "organism": "Rattus norvegicus"
+    },
+    {
+      "code": "CAT",
+      "organism": "Felis catus"
+    },
+    {
+      "code": "DOG",
+      "organism": "Canis lupus familiaris"
+    }
+  ],
+  "queries": [
+    {
+      "id": "DEMO_on_RAT",
+      "assay": "DEMO_fixture",
+      "species_code": "RAT",
+      "organism": "Rattus norvegicus",
+      "is_target": true,
+      "forward": "ACGT",
+      "reverse": "TGCA",
+      "parameters": {
+        "PRIMER_LEFT_INPUT": "ACGT",
+        "PRIMER_RIGHT_INPUT": "TGCA",
+        "ORGANISM": "Rattus norvegicus",
+        "PRIMER_SPECIFICITY_DATABASE": "refseq_representative_genomes",
+        "TOTAL_PRIMER_SPECIFICITY_MISMATCH": "3",
+        "PRIMER_3END_SPECIFICITY_MISMATCH": "2",
+        "MISMATCH_REGION_LENGTH": "5",
+        "PRIMER_PRODUCT_MIN": "50",
+        "PRIMER_PRODUCT_MAX": "2000",
+        "CMD": "Put",
+        "PAGE_TYPE": "Search",
+        "USER_TYPE": "2",
+        "SEARCH_SPECIFIC_PRIMER": "on"
+      },
+      "requested_utc": "2026-01-01T00:00:00Z",
+      "finished_utc": "2026-01-01T00:00:00Z",
+      "job_key": null,
+      "status": "completed_results",
+      "products": [
+        {
+          "template_accession": "NC_086024.1",
+          "length_bp": 82
+        },
+        {
+          "template_accession": "NC_086024.1",
+          "length_bp": 52
+        }
+      ],
+      "parse_status": "ok",
+      "parse_error": "",
+      "error": null,
+      "submission": {
+        "path": "RAT-raw.html",
+        "sha256": "36871087523a1c4534af04396f98de9e1f2bf554ce1503caf47ad2109903fed7",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "raw_response": {
+        "path": "RAT-raw.html",
+        "sha256": "36871087523a1c4534af04396f98de9e1f2bf554ce1503caf47ad2109903fed7",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "result_page": "RAT-display.html",
+      "display_sha256": "36871087523a1c4534af04396f98de9e1f2bf554ce1503caf47ad2109903fed7",
+      "display_is_derived": true
+    },
+    {
+      "id": "DEMO_on_CAT",
+      "assay": "DEMO_fixture",
+      "species_code": "CAT",
+      "organism": "Felis catus",
+      "is_target": false,
+      "forward": "ACGT",
+      "reverse": "TGCA",
+      "parameters": {
+        "PRIMER_LEFT_INPUT": "ACGT",
+        "PRIMER_RIGHT_INPUT": "TGCA",
+        "ORGANISM": "Felis catus",
+        "PRIMER_SPECIFICITY_DATABASE": "refseq_representative_genomes",
+        "TOTAL_PRIMER_SPECIFICITY_MISMATCH": "3",
+        "PRIMER_3END_SPECIFICITY_MISMATCH": "2",
+        "MISMATCH_REGION_LENGTH": "5",
+        "PRIMER_PRODUCT_MIN": "50",
+        "PRIMER_PRODUCT_MAX": "2000",
+        "CMD": "Put",
+        "PAGE_TYPE": "Search",
+        "USER_TYPE": "2",
+        "SEARCH_SPECIFIC_PRIMER": "on"
+      },
+      "requested_utc": "2026-01-01T00:00:00Z",
+      "finished_utc": "2026-01-01T00:00:00Z",
+      "job_key": null,
+      "status": "completed_results",
+      "products": [],
+      "parse_status": "needs_review",
+      "parse_error": "产物数或模板块结构待核",
+      "error": null,
+      "submission": {
+        "path": "CAT-raw.html",
+        "sha256": "889512233d74cf6273b77c31e15d084a5509f2ece19d64a61e3e69dd70b2dd02",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "raw_response": {
+        "path": "CAT-raw.html",
+        "sha256": "889512233d74cf6273b77c31e15d084a5509f2ece19d64a61e3e69dd70b2dd02",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "result_page": "CAT-display.html",
+      "display_sha256": "889512233d74cf6273b77c31e15d084a5509f2ece19d64a61e3e69dd70b2dd02",
+      "display_is_derived": true
+    },
+    {
+      "id": "DEMO_on_DOG",
+      "assay": "DEMO_fixture",
+      "species_code": "DOG",
+      "organism": "Canis lupus familiaris",
+      "is_target": false,
+      "forward": "ACGT",
+      "reverse": "TGCA",
+      "parameters": {
+        "PRIMER_LEFT_INPUT": "ACGT",
+        "PRIMER_RIGHT_INPUT": "TGCA",
+        "ORGANISM": "Canis lupus familiaris",
+        "PRIMER_SPECIFICITY_DATABASE": "refseq_representative_genomes",
+        "TOTAL_PRIMER_SPECIFICITY_MISMATCH": "3",
+        "PRIMER_3END_SPECIFICITY_MISMATCH": "2",
+        "MISMATCH_REGION_LENGTH": "5",
+        "PRIMER_PRODUCT_MIN": "50",
+        "PRIMER_PRODUCT_MAX": "2000",
+        "CMD": "Put",
+        "PAGE_TYPE": "Search",
+        "USER_TYPE": "2",
+        "SEARCH_SPECIFIC_PRIMER": "on"
+      },
+      "requested_utc": "2026-01-01T00:00:00Z",
+      "finished_utc": "2026-01-01T00:00:00Z",
+      "job_key": null,
+      "status": "error",
+      "products": [],
+      "parse_status": "not_applicable",
+      "parse_error": "",
+      "error": "Synthetic failure",
+      "submission": {
+        "path": "DOG-raw.html",
+        "sha256": "d797e2762cce491eafaf2cb9ad2d68bcf8f7543148e702aad13e08b777afc88d",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "raw_response": {
+        "path": "DOG-raw.html",
+        "sha256": "d797e2762cce491eafaf2cb9ad2d68bcf8f7543148e702aad13e08b777afc88d",
+        "received_utc": "2026-01-01T00:00:00Z"
+      },
+      "result_page": "DOG-display.html",
+      "display_sha256": "d797e2762cce491eafaf2cb9ad2d68bcf8f7543148e702aad13e08b777afc88d",
+      "display_is_derived": true
+    }
+  ]
+}

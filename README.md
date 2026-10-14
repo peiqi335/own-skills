@@ -1,177 +1,176 @@
 # own-skills
 
-裴崎的 [OpenCode](https://opencode.ai) 自制 skills：给凝胶图标孔、把 BLAST XML 做成离线页、运行成对 Primer-BLAST 并生成离线看板、归档 GDV 基因座、把单篇论文做成原图 PPT。
+裴崎的 [OpenCode](https://opencode.ai) 自制 skills：凝胶标注、BLAST 离线展示、成对 Primer-BLAST 检索、GDV 基因座证据归档，以及单篇论文原图 PPT。
 
-本仓库是源码，不是运行时加载点。拷进 OpenCode 的 skills 目录后才会被发现。MIT。
+本仓库保存技能源码；按需复制到 OpenCode 的 skills 目录后使用。科学技能需要本次真实输入、身份与来源核查，不是安装后就能替你完成科学判断的通用工具。
 
-## 目录
+## 总览
 
-- [快速入门](#快速入门)
-- [可选：不启动 OpenCode 看产物](#可选不启动-opencode-看产物)
-- [Skills](#skills)
-  - [gel-annotation](#gel-annotation)
-  - [blast-offline-html](#blast-offline-html)
-  - [primer-blast-results](#primer-blast-results)
-  - [gdv-offline-evidence](#gdv-offline-evidence)
-  - [paper2ppt](#paper2ppt)
-- [安装位置](#安装位置)
-- [边界](#边界)
-- [License](#license)
+| 技能 | 用途 | 主要产物 |
+| --- | --- | --- |
+| [gel-annotation](#gel-annotation) | 给凝胶原图标孔位与泳道身份 | 标注 PNG、回放与检查记录 |
+| [blast-offline-html](#blast-offline-html) | 展示已有单 query BLASTN XML | 可断网打开的 HTML 与 CSS |
+| [primer-blast-results](#primer-blast-results) | 成对 F/R Primer-BLAST 检索与报告归档 | 离线矩阵、原始响应、展示报告与哈希清单 |
+| [gdv-offline-evidence](#gdv-offline-evidence) | 归档真实官方轨道并渲染基因座证据图 | PDF、SVG、PNG 与来源记录 |
+| [paper2ppt](#paper2ppt) | 单篇精读、讨论、确认后制作原图汇报 | 精读归档与可编辑 PPTX |
 
-## 快速入门
+导航：[效果展示](#效果展示) · [快速开始](#快速开始) · [BLAST 夹具示例](#blast-夹具示例) · [五个技能](#五个技能) · [依赖概要](#依赖概要) · [边界](#边界) · [维护入口](#维护入口) · [License](#license)
 
-1. 克隆本仓库，把要用的 skill 拷到 OpenCode 能找到的位置（项目级优先）：
+## 效果展示
 
-   ```bash
-   git clone https://github.com/peiqi335/own-skills.git
-   mkdir -p .agents/skills
-   cp -a own-skills/paper2ppt .agents/skills/
-   ```
+演示数据／真实产物节选不等于科研结论；各图来源与展示范围见对应章节，不代表整体任务已验收。
 
-2. 重启 OpenCode，或在当前会话重载 skills。
-3. 把论文路径换成你的文件，直接说：
+| 技能 | 实际效果 |
+| --- | --- |
+| [gel-annotation](#gel-annotation) | <img src="docs/images/gel-annotation.png" width="280" alt="合成凝胶底图经真实脚本标注的演示"> |
+| [blast-offline-html](#blast-offline-html) | <img src="docs/images/blast-offline-html.png" width="280" alt="20 bp、两条命中的仓库 XML 夹具离线渲染"> |
+| [primer-blast-results](#primer-blast-results) | <img src="docs/images/primer-blast-results.png" width="280" alt="合成测试状态经真实离线构建生成的看板，未提交 NCBI"> |
+| [gdv-offline-evidence](#gdv-offline-evidence) | <img src="gdv-offline-evidence/assets/cat1-standard/CAT_1_enhanced.png" width="280" alt="CAT_1 官方轨道多轨道离线证据图"> |
+| [paper2ppt](#paper2ppt) | <img src="docs/images/paper2ppt.png" width="280" alt="真实既有文献汇报的作者自写文字版面节选，不含论文原图"> |
 
-   ```text
-   启动 paper2ppt 工作流，论文在 ./papers/example.pdf
-   ```
+## 快速开始
 
-其余 skill 同样只需要一句话：
-
-```text
-给这张第二批凝胶标孔，泳道从左到右是 Marker、样品1、NTC
-把这份 BLAST XML 渲成可断网打开的 HTML
-按 CAT_1 标准做这个 GDV 基因座的离线证据图
-```
-
-详细规则在各目录的 `SKILL.md`。未指定输出位置时，agent 按该 skill 的约定落盘，而不是写进本仓库。
-
-### 标准样板与模块 CLI 导航
-
-本机项目标准样板位于 `课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/`；真实输入、身份、样本配置、回放报告和实验边界保留在项目，不灌入通用 skill。
-
-- **凝胶新输入**：见 [模块 README](gel-annotation/README.md) 与 [规范参数模板](gel-annotation/assets/recognized_minimal.spec.template.json)。`gel-annotation/scripts/annotate_gel.py SPEC.json --repo PROJECT --review-dir NEW_REVIEW` 实际执行 opt-in `recognized_minimal_v1`；历史图补丁重建使用独立 `replay_operations.py`，不能继承旧科学事实。
-- **GDV**：见 [模块 README](gdv-offline-evidence/README.md)。`gdv-offline-evidence/scripts/render_gdv.py SPEC.json --input-root PROJECT --validate-only` 核验真实输入；需要绘图依赖时使用项目已有环境，不把缺 Cairo 的普通 Python 当科学输入失败。
-- **BLAST XML**：`blast-offline-html/scripts/render_blast_offline.py INPUT.xml -o NEW_OUTPUT`；不提交网络查询。
-- **成对 Primer-BLAST／离线站点**：见 [接口](primer-blast-results/INTERFACE.md)；总入口由项目整合流程维护。`runtime-sync.json` 保留阶段partial记录，当前四模块同步及窄验证见项目标准样板根的 `runtime-sync-final.json`；不能把模块检查当整体任务或最终视觉验收通过。
-
-项目统一重建使用已归档的 `standard-case.json` 与模块配置，不要求使用者再次提供历史样本spec；新实验仍须提供本次真实输入与身份。命令须使用**不存在的新输出根**：
+先进入**要使用技能的目标项目目录**，再按需安装。以下仅安装 `paper2ppt`，不会把五个技能全部装入项目：
 
 ```bash
-P='/home/qi/文档/课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14'
-python -B "$P/scripts/rebuild_standard.py" \
-  --gdv-python /tmp/opencode/gdv-replay-venv/bin/python \
-  --output "$P/统一回放/fresh-root"
+git clone https://github.com/peiqi335/own-skills.git
+mkdir -p .agents/skills
+cp -a own-skills/paper2ppt .agents/skills/
 ```
 
-分层边界：GEL的legacy旧图→定稿14张byte一致，原图raw链仍未通过；GDV由模块真实转换，site接入固定rendered资源时是字节复制，不能据复制同一PDF声称真实转换的PDF字节确定。CLI产物与机械比对不等于科学来源或最终视觉认证。
+在该目标项目中启动新的 OpenCode 会话；已有会话可重启或使用宿主提供的技能重载。将路径换成实际论文后说：
 
-本机导航：[最终候选站点](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/统一回放/final/run-A/site/index.html) · [整合交付报告](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/统一回放/final/交付/phase2-verification.json) · [最终runtime同步审计](../课题实验/5.知识结论/02.PCR与凝胶初筛/标准样板_2026-10-14/runtime-sync-final.json)。这些跨目录链接只供本机导航，不是可移植包字段。
+```text
+启动 paper2ppt 工作流，论文在 ./papers/example.pdf；汇报归档到 ./6.文献汇报/
+```
 
-## 可选：不启动 OpenCode 看产物
+安装其他技能时，将复制命令中的 `paper2ppt` 换成所需目录名。保留每个技能的完整目录，不要打散 `SKILL.md`、`scripts/`、`references/` 和 `assets/`。
 
-脚本可以单独跑。下面用自带夹具生成一页离线 BLAST HTML：
+| 安装位置 | 范围 |
+| --- | --- |
+| `<目标项目>/.agents/skills/<name>/` | 项目级，优先采用 |
+| `<目标项目>/.opencode/skills/<name>/` | 项目级 OpenCode 布局 |
+| `~/.config/opencode/skills/<name>/` | 当前用户的所有项目 |
+
+安装只让 agent 能发现技能；执行所需材料、依赖和确认门槛见下文及各技能详情。结果写入目标项目或约定输出目录，不默认写入此源码仓库。
+
+## BLAST 夹具示例
+
+不启动 OpenCode，也可以直接运行捆绑渲染器。若已按上文克隆，从目标项目执行 `cd own-skills`；独立体验则先克隆，再进入源码目录：
 
 ```bash
 git clone https://github.com/peiqi335/own-skills.git
 cd own-skills
-python3 blast-offline-html/scripts/render_blast_offline.py \
+python3 -B blast-offline-html/scripts/render_blast_offline.py \
   blast-offline-html/tests/fixtures/tiny_blastn.xml \
   -o /tmp/own-skills-blast-demo
 ```
 
-输出是 `/tmp/own-skills-blast-demo/tiny_blastn.html` 和同目录的 `viewer.css`。浏览器直接打开该 HTML（`file://` 可用），应看到 query 长度 20、黑色 Query 主条、两条命中。这只验证渲染器，不跑 `blastn`。
+输出为 `/tmp/own-skills-blast-demo/tiny_blastn.html` 和同目录的 `viewer.css`。浏览器可直接打开 HTML（`file://`）；携带时复制整个输出目录。夹具的 query 长度为 20 bp，有两条命中；页面包含黑色 Query 主条、命中摘要和成对序列比对。
 
-## Skills
+这是**已有 XML 的展示示例**，不运行 `blastn`，不向 NCBI 提交查询，也不是成对引物的 Primer-BLAST 检索。
+
+## 五个技能
 
 ### gel-annotation
 
-给琼脂糖凝胶照片标孔位和泳道身份，另存 PNG。只定位、只标注，不解释条带，不改实验记录页。
+**用途**：给琼脂糖凝胶照片标孔位和泳道身份，只定位、只标注，不解释条带。
 
-**你说什么**
+**输入**：本次凝胶原图、用户说明或指定记录中的泳道身份；需要 Ladder 标尺时提供已核实依据。新输入的 spec 与孔位来自本轮图像扫描，不能套用历史补丁或样本身份。
+
+**调用示例**：
 
 ```text
-给这张第二批凝胶标孔，泳道从左到右是 Marker、样品1、NTC
+用 gel-annotation 给 ./images/第二批凝胶.png 标孔，泳道从左到右是 Marker、样品1、NTC；先给逐孔表和标注方案，确认后再画。
 ```
 
-**得到什么**
+**输出与边界**：另存标注 PNG，支持分组层级、空孔避让与已核实的 Ladder 标尺，并可归档配置、manifest 与检查记录。不覆盖原图、不改实验记录页；尚无确认方案时先确认再画。不从条带有无猜空孔，也不据图像标注给出 PCR 结论。
 
-原图旁一份新 PNG（引线准确落在孔心、支持分组层级、空孔避让与已核实的 Ladder 标尺，不覆盖原图）。
+**详情**：[使用规则](gel-annotation/SKILL.md) · [新输入与历史回放](gel-annotation/README.md) · [演示输入与生成记录](docs/examples/gel-annotation/README.md)
 
-尚无确认方案时，agent 先给逐孔表和执行方案，等你确认再画。几何来自本轮对这张图的扫描；身份只能来自你的说明或你指定的记录。
+**效果示例**：合成底图经真实标注脚本生成，展示标孔与泳道身份标注，不是真实实验。
 
-**不要指望它**
-
-从图上有没有条带来猜空孔，或把命中写成 PCR 结论。
+![合成凝胶标注演示](docs/images/gel-annotation.png)
 
 ### blast-offline-html
 
-把已有单 query BLASTN XML（`-outfmt 5`）渲成可拷到 U 盘、断网双击打开的结果页。权威数据是 XML；页面只是展示层。
+**用途**：把已有单 query BLASTN XML（`-outfmt 5` / `FORMAT_TYPE=XML`）渲成离线结果页；XML 是数据来源，HTML 是展示层。
 
-**你说什么**
+**输入**：符合字段与坐标校验的 XML 文件或目录，不以保存的官网 HTML 或胶图反推 HSP 数据。
 
-```text
-把 ./hits.xml 渲成可断网打开的 HTML
-```
-
-**得到什么**
-
-一个目录，通常是 XML 旁的 `blast-offline/`（调用 CLI 时必须 `-o`）：
+**调用示例**：
 
 ```text
-blast-offline/
-├── tiny_blastn.html
-└── viewer.css
+用 blast-offline-html 把 ./hits.xml 渲成可断网打开的 HTML，输出到 ./results/blast-offline/，保留源 XML。
 ```
 
-页面含 Graphic Summary、Descriptions、pairwise alignments。夹具 `tests/fixtures/tiny_blastn.xml` 的 query 长 20 bp、两条命中；渲染结果无 NCBI 外链。不跑 BLAST，不拉 RID。
+**输出与边界**：每份 XML 生成同名 HTML，共用 `viewer.css`；多份输入另生成目录页。页面含 Graphic Summary、Descriptions 和 pairwise alignments，无 NCBI 外链。CLI 必须指定 `-o`；未指定位置的自然语言任务按技能约定在 XML 旁建 `blast-offline/`。不运行 BLAST、不拉 RID、不做成对引物 PCR 检索；命中不是物种鉴定。
 
-**不要指望它**
+**详情**：[使用规则与 CLI](blast-offline-html/SKILL.md) · [自带夹具](blast-offline-html/tests/fixtures/tiny_blastn.xml) · [演示生成记录](docs/examples/blast-offline-html/README.md)
 
-把 BLAST 命中当成物种鉴定，或从胶图反推坐标。
+**效果示例**：仓库中 query 长 20 bp、两条命中的 XML 夹具经真实渲染器生成；展示离线页面，不涉及联网查询，不代表实验结果。
+
+![BLAST XML 夹具离线渲染演示](docs/images/blast-offline-html.png)
 
 ### primer-blast-results
 
-读取成对 F/R 引物，向 NCBI 提交 Primer-BLAST，或将已有报告与 `status.json` 打包成离线看板。支持基因组 `refseq_representative_genomes` 和转录组 `refseq_rna`；输出总入口、引物×物种矩阵、报告预览和哈希清单。详细输入及命令见 [SKILL.md](primer-blast-results/SKILL.md)。
+**用途**：读取成对 F/R 引物，获授权后向 NCBI 提交 Primer-BLAST；也可只把已有报告与状态归档构建成离线看板。基因组数据库 `refseq_representative_genomes` 与转录组数据库 `refseq_rna` 分开处理。
 
-2026-10-14 已补状态与来源保护：超时、错误和证据不足分别登记，不合成阴性；原始响应与展示页分开归档；复用前核对引物、物种、数据库、参数和哈希。看板必须写入新目录，`--force` 不再允许覆盖已有目录。接口与旧归档处理见 [INTERFACE.md](primer-blast-results/INTERFACE.md)。预测结果不是湿实验验证结论，历史重建页缺原始响应时保留为来源待核。
+**输入**：新查询需要 `assays.json` 中的 F/R 序列、目标物种及数据库选择；当前脚本默认查询内置 15 个物种，产品范围与错配约束见接口。离线构建需要 `status.json` 和对应报告、原始响应及来源信息，不能仅凭空产物列表补写阴性。
+
+**调用示例**：
+
+```text
+用 primer-blast-results 读取 ./assays.json，我授权向 NCBI 运行成对 Primer-BLAST，数据库用 refseq_rna；准备目录用 ./results/primer-rna-run-01/，离线看板用 ./results/primer-rna-panel-01/，两者都必须是新目录。
+```
+
+只归档、不联网时可以说：
+
+```text
+用 primer-blast-results 把 ./archive/status.json 和对应报告构建为 ./results/primer-panel-01/ 的离线看板，不重新提交查询；保留原始响应，并明确标出来源待核项。
+```
+
+**输出与边界**：总入口 `index.html`、`01.成对Primer-BLAST/` 引物×物种矩阵、原始响应、展示报告、派生状态与 `checks.json`。原始响应和展示页分开归档；超时、错误、未知与解析待核不合成“无产物”。复用须核对引物、物种、数据库、参数和哈希；历史报告缺原始响应时保留来源待核。看板须写入新目录，`--force` 不允许覆盖。预测产物不是完全特异或湿实验验证结论。
+
+**详情**：[使用规则](primer-blast-results/SKILL.md) · [输入、参数与证据接口](primer-blast-results/INTERFACE.md) · [合成测试状态与生成记录](docs/examples/primer-blast-results/README.md)
+
+**效果示例**：合成测试状态经真实离线构建脚本生成的看板，未向 NCBI 提交查询，不代表真实检索结论。
+
+![成对 Primer-BLAST 合成状态离线看板演示](docs/images/primer-blast-results.png)
 
 ### gdv-offline-evidence
 
-把 NCBI GDV / Sequence Viewer 的指定基因座做成可断网打开的多轨道 PDF、SVG、PNG，并留下来源与检查记录。
+**用途**：获取或使用已有 NCBI GDV / Sequence Viewer 官方 SVG，结合已核实来源渲染多轨道离线证据图，不用截图包装矢量图或手绘官方轨道。
 
-**你说什么**
+**输入**：指定基因座的 GDV 链接或本地官方矢量导出，以及当前 assembly、accession/version、窗口、元数据和标记来源。填写外显子时须绑定 `product_report`，核对转录本版本、基因组 accession、链向及完整坐标。
+
+**调用示例**：
 
 ```text
-按 CAT_1 标准做这个 GDV 链接的离线证据图
+用 gdv-offline-evidence 将我提供的 GDV 链接按 CAT_1 标准归档到 ./results/gdv-run-01/；核实当前组装和窗口，使用真实官方 SVG，记录缺失轨道，不推断引物特异性。
 ```
 
-**得到什么**
+**输出与边界**：新目录中的 `{locus_id}_enhanced.pdf`、SVG、PNG、官方轨道副本、`spec.json`、`source_notes.md` 和检查记录。轨道保持官方数据与相对几何，来源、内容和视觉仍需人工复核。RNA-seq 是公共证据，变异轨道不是本样本基因型；原件标题端点观测不等于已知坐标约定。冻结 CAT 示例的空 EVA 窗口已更正登记，历史图像不重绘。
 
-用户指定结果目录下的一套文件，例如 `{locus_id}_enhanced.png`、官方轨道 SVG、`spec.json`、`source_notes.md`。标准例（猫 B1 / SOWAHB，不是通用装饰图）：
+**效果示例**：猫 B1 / SOWAHB 的 CAT_1 标准图，只是该基因座示例，不是可套用到其他物种的数据模板。
 
 ![CAT_1 多轨道离线证据图](gdv-offline-evidence/assets/cat1-standard/CAT_1_enhanced.png)
 
-轨道保持 NCBI 官方显示；RNA-seq 是公共证据，变异轨道不是本样本基因型。完整标准在 [`assets/cat1-standard/`](gdv-offline-evidence/assets/cat1-standard/)。
-
-有外显子的输入须绑定 `product_report` 并按转录本版本、基因组 accession、链向及完整坐标校验。轨道内容与视觉验收仍需人工复核；原件标题端点观测不等于已知坐标约定。冻结 CAT 示例的空 EVA 窗口已更正登记，历史图像不重绘。
-
-**不要指望它**
-
-从截图猜坐标，或自动判定引物特异性、注释一致、实验验证通过。
+**详情**：[使用规则](gdv-offline-evidence/SKILL.md) · [渲染与回放合约](gdv-offline-evidence/README.md) · [CAT_1 来源与标准文件](gdv-offline-evidence/assets/cat1-standard/)
 
 ### paper2ppt
 
-单篇精读、讨论逻辑主线，确认后再做原图驱动的可编辑 PPTX。图只来自该论文及补充材料，允许裁切和等比缩放，禁止生成或重绘机制图。
+**用途**：单篇精读、讨论逻辑主线，确认后制作原图驱动的可编辑 PPTX。
 
-**你说什么**
+**输入**：论文正文与已提供补充材料、可读原图，以及指定或确认的汇报根目录。图只来自该论文及补充材料；允许忠实裁切和等比缩放，不生成或重绘原始结果图、机制图，不用外部图装饰。
+
+**调用示例**：
 
 ```text
-启动 paper2ppt 工作流，论文在 ./papers/example.pdf
+启动 paper2ppt 工作流，论文在 ./papers/example.pdf，补充材料在 ./papers/supplement.pdf；先精读并讨论汇报主线，归档到 ./6.文献汇报/。
 ```
 
-**得到什么**
-
-先是精读笔记和讨论，正常停在「待主线确认」。你说「按这个主线制作」之后，才有 PPT。归档示例：
+**输出与边界**：先交精读笔记与讨论。默认先确认主线，再给逐页方案；分页确认后才连续制作与验收。已有明确授权不重复询问；“懂了，继续讲”只推进讨论，不等于授权制作 PPT。归档结构：
 
 ```text
 第一作者_年份_简短题名/
@@ -186,36 +185,41 @@ blast-offline/
     └── 第一作者_年份_文献汇报_v01.pptx
 ```
 
-未指定根目录时，agent 会找项目里的 `6.文献汇报/`，找不到再问。「懂了，继续讲」只推进讨论，不等于授权做 PPT。
+技能含作者项目的默认归档路径；其他项目应明确指定或确认实际根目录，不把本机默认当可移植约定。完整阅读范围不因汇报时长而缩减；不跳过精读直接出幻灯片，不自动摄入知识库。
 
-**不要指望它**
+**详情**：[使用规则](paper2ppt/SKILL.md) · [工作流](paper2ppt/references/workflow.md) · [工具路由与预检](paper2ppt/references/tool-routing.md) · [节选来源与页码](docs/examples/paper2ppt-provenance.md)
 
-跳过精读直接出幻灯片，或用外部/生成图装饰。
+**效果示例**：真实既有文献汇报的中文文字版面节选，未包含论文原图。展示现有产物的版面与汇报主线，不提供完整 PPT；来源、页码与展示限制见节选来源记录。
 
-## 安装位置
+![既有文献汇报作者自写文字版面节选](docs/images/paper2ppt.png)
 
-| 位置 | 作用 |
-| --- | --- |
-| `<项目>/.agents/skills/<name>/` | 仅该项目；优先用这个 |
-| `<项目>/.opencode/skills/<name>/` | 仅该项目（OpenCode 布局） |
-| `~/.config/opencode/skills/<name>/` | 当前用户所有项目 |
+## 依赖概要
 
-每个 skill 保持独立目录，不要打散 `SKILL.md`、`scripts/`、`references/`、`assets/`。拷完后重启或重载，否则 agent 仍看不到。
+按所用技能和执行阶段准备环境，不需要一次安装整套依赖。下面区分核心执行与额外检查；详细合约以技能文档和现有预检为准。
+
+| 技能 | 执行所需 | 检查或替代路线 |
+| --- | --- | --- |
+| `gel-annotation` | Python、Pillow、配置指向的真实字体；显式 RAQM 配置需要相应字体布局能力 | 回放比较和 review 工具按任务使用；记录环境不保证跨机器像素一致 |
+| `blast-offline-html` | Python 标准库与随技能携带的 `viewer.css` | 浏览器用于实际查看；渲染已有 XML 不需要安装 BLAST 或联网 |
+| `primer-blast-results` | 查询与看板入口使用 Python 标准库；新查询需要访问 NCBI 与用户授权 | 已有完整归档可离线构建；状态/哈希检查不替代来源与页面复核 |
+| `gdv-offline-evidence` | 本地渲染用 CairoSVG、系统 Cairo、Pillow、tinycss2；当前实现需 Linux 字体／渲染与环境审计能力，详见[模块说明](gdv-offline-evidence/README.md)；获取新官方输入另需 NCBI 访问与可用导出能力 | `pdftoppm` 用于独立 PDF 预览，现有批量回放脚本需要它，不是单次渲染命令的前置条件 |
+| `paper2ppt` | 可读论文、忠实图片提取能力；制作阶段需要可编辑 PPT、备注与重开能力 | 原生能力优先；本地后备路线的预检检查 `python-pptx` ≥ 1.0.2、PyMuPDF ≥ 1.24、Pillow ≥ 10。渲染使用宿主可用路线或 LibreOffice/soffice；缺制作工具不阻塞可开展的阅读 |
+
+依赖缺失、输入校验失败与科学证据不足是不同问题。这里不承诺未经测试的平台支持，也不承诺迁移后字体、像素或 PDF 原始字节一致。
 
 ## 边界
 
-- `gel-annotation`、`gdv-offline-evidence`、`blast-offline-html` 面向 PCR / 基因组 vault 的相对目录（如 `1.原始资料/`、`4.知识库/`），不是即插即用的通用工具。
-- `paper2ppt` 需要你指定或确认汇报根目录。
-- 胶图、BLAST 命中、GDV 轨道都不是湿实验结论。
+- **BLAST 展示**只读已有 XML；**成对 Primer-BLAST**使用 F/R 和明确数据库进行检索并留证；**GDV 渲染**基于真实官方 SVG 与来源 spec 转换成图。三者不能互相代替。
+- **站点静态整合**把已有模块产物接入离线总入口，负责路径、资源接收与导航，不重新做检索或官方 SVG 转换。接入固定 rendered 资源时的字节复制，不证明转换本身具有字节确定性，也不构成科学或视觉验收。
+- 科学技能保留 PCR / 基因组项目的目录与记录约定，例如 `1.原始资料/`、`3.记录/`、`4.知识库/`；其他项目须核对输入、输出位置与受保护目录，不照抄历史样本或路径。
+- 胶图标注、BLAST 命中、预测扩增产物和 GDV 公共轨道都不是湿实验结论。来源绑定、技术检查、实际看图与科学判断分别验收。
+
+## 维护入口
+
+本机标准样板、历史回放、运行时同步记录与未决边界集中在 [维护说明](docs/maintenance.md)。该页明确区分仓库内入口与仅本机可用的项目导航；根 README 不重复维护这些记录。
 
 ## License
 
 [MIT](LICENSE) © 2026 裴崎
 
-## 本地运行时同步
-
-2026-10-14 原样同步本地运行时，排除 Python 缓存。前四个技能来自 `/home/qi/文档/课题实验/.agents/skills/`（凝胶、BLAST XML、Primer-BLAST、GDV）；`paper2ppt` 来自 `/home/qi/文档/法医动物非人源/.agents/skills/`。
-
-同日依据实际结果修复凝胶、Primer-BLAST 与 GDV 技能，并同步上述实验仓库运行时副本。凝胶新增可选简洁版、真实样本与展示标签分离、随图回放清单及候选覆盖保护；未反推旧图配置或修改实验原件。技能变更在新的 OpenCode 会话中重新加载；如需立即使用，重启 OpenCode。
-
-实际检查、独立审查及仍待核事项见 [修复验收记录](修复验收_2026-10-14.md)。
+MIT 覆盖仓库代码；第三方数据与论文材料按各自来源许可使用，NCBI 公开可访问不等于所有内容均无版权或使用限制。

@@ -1,0 +1,76 @@
+{
+  "presentation_profile": "recognized_minimal_v1",
+  "src": "synthetic-input.png",
+  "source_sha256": "01d316b037545609f8c92c891241586d081fb6a948f7871679cefae7a8ef47a3",
+  "out": "synthetic（标注）.png",
+  "date": "合成示例",
+  "primer_name": "仅展示孔位标注",
+  "font_paths": {
+    "regular": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "bold": "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
+  },
+  "font_sha256": {
+    "regular": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a",
+    "bold": "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"
+  },
+  "portable_resources": false,
+  "top_padding": 0,
+  "rows": [
+    {
+      "well": 450,
+      "lane_x": [
+        240,
+        480,
+        720,
+        960
+      ],
+      "lane_y": [
+        450,
+        450,
+        450,
+        450
+      ],
+      "marker_indices": [
+        0
+      ],
+      "review_box": [
+        140,
+        420,
+        1060,
+        740
+      ],
+      "groups": [
+        {
+          "head": "",
+          "lanes": [
+            {
+              "index": 1,
+              "sample_id": "synthetic-1",
+              "display_label": "样品1"
+            }
+          ]
+        },
+        {
+          "head": "",
+          "lanes": [
+            {
+              "index": 2,
+              "sample_id": "synthetic-2",
+              "display_label": "样品2"
+            }
+          ]
+        },
+        {
+          "head": "",
+          "lanes": [
+            {
+              "index": 3,
+              "sample_id": "synthetic-3",
+              "display_label": "NTC"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
